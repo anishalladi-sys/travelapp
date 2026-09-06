@@ -37,7 +37,7 @@ Browser (Next.js App Router)
 
 ## Deployment
 - Vercel env vars set via dashboard (no secrets in repo).
-- Migrations: `docs/migrations/001-v1-trips-itinerary.sql` (source of truth), also mirrored to `supabase/migrations/` if CLI used.
+- Migrations: `supabase/migrations/20250101000000_v1_trips_itinerary.sql` (source of truth), also mirrored to `docs/migrations/` if CLI used.
 
 ## Observability (v1 minimal)
 - Structured console logs for mutations (no PII/secrets)

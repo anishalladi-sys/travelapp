@@ -45,7 +45,7 @@ docs/
   reasonix/plans/travelapp-v1-plan.md
   architecture/architecture-overview.md
   decisions/0001-use-nextjs-supabase-for-v1.md
-  migrations/001-v1-trips-itinerary.sql
+migrations/20250101000000_v1_trips_itinerary.sql
 ```
 
 ## Data model (v1)
@@ -62,7 +62,7 @@ Set env vars in Vercel dashboard:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (never expose to client, not needed for v1 anon flow)
 
-Run migration `docs/migrations/001-v1-trips-itinerary.sql` via Supabase SQL editor or `supabase db push`.
+Run migration `supabase/migrations/20250101000000_v1_trips_itinerary.sql` via Supabase SQL editor or `supabase db push`.
 
 ## Backlog (v2+)
 Accommodation, transportation, budget tracker, documents storage, packing list, POI, emergency info, media & memories — specs in `TRAVEL-APP-HANDOFF.md`.

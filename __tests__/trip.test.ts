@@ -21,7 +21,7 @@ describe("tripSchema", () => {
   it("rejects end before start", () => {
     const r = tripSchema.safeParse({ title: "X", destination: "Y", start_date: "2026-04-10", end_date: "2026-04-01" });
     expect(r.success).toBe(false);
-    if (!r.success) expect(r.error.issues[0].message).toMatch(/end_date/);
+    if (!r.success) expect(r.error.issues[0]?.message).toMatch(/end_date/);
   });
   it("coerces traveler_count", () => {
     const r = tripSchema.safeParse({ title: "T", destination: "D", start_date: "2026-01-01", end_date: "2026-01-02", traveler_count: "3" });

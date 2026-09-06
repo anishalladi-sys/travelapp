@@ -68,7 +68,7 @@ export async function updateTrip(id: string, patch: Partial<Omit<Trip, "id" | "u
   }
   const idx = store.trips.findIndex((t) => t.id === id && t.user_id === user_id);
   if (idx === -1) return null;
-  store.trips[idx] = { ...store.trips[idx], ...patch };
+  store.trips[idx] = { ...store.trips[idx], ...patch } as Trip;
   return store.trips[idx];
 }
 
@@ -85,7 +85,10 @@ export async function deleteTrip(id: string): Promise<void> {
   const idx = store.trips.findIndex((t) => t.id === id && t.user_id === user_id);
   if (idx !== -1) store.trips.splice(idx, 1);
   // cascade items
-  for (let i = store.items.length - 1; i >= 0; i--) if (store.items[i].trip_id === id) store.items.splice(i, 1);
+  for (let i = store.items.length - 1; i >= 0; i--) {
+    const item = store.items[i];
+    if (item && item.trip_id === id) store.items.splice(i, 1);
+  }
 }
 
 // Itinerary
@@ -145,9 +148,11 @@ export async function updateItinerary(id: string, patch: Partial<Omit<ItineraryI
   }
   const idx = store.items.findIndex((it) => it.id === id);
   if (idx === -1) return null;
-  const trip = await getTrip(store.items[idx].trip_id);
+  const item = store.items[idx];
+  if (!item) return null;
+  const trip = await getTrip(item.trip_id);
   if (!trip) throw new Error("Forbidden");
-  store.items[idx] = { ...store.items[idx], ...patch };
+  store.items[idx] = { ...item, ...patch } as ItineraryItem;
   return store.items[idx];
 }
 
@@ -165,7 +170,9 @@ export async function deleteItinerary(id: string): Promise<void> {
   }
   const idx = store.items.findIndex((it) => it.id === id);
   if (idx === -1) return;
-  const trip = await getTrip(store.items[idx].trip_id);
+  const item = store.items[idx];
+  if (!item) return;
+  const trip = await getTrip(item.trip_id);
   if (!trip) throw new Error("Forbidden");
   store.items.splice(idx, 1);
 }

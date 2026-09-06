@@ -18,9 +18,9 @@ describe("authz - own trips only (fallback store)", () => {
     const userATrips = store.trips.filter((t) => t.user_id === "user-a");
     const userBTrips = store.trips.filter((t) => t.user_id === "user-b");
     expect(userATrips).toHaveLength(1);
-    expect(userATrips[0].id).toBe("t1");
+    expect(userATrips[0]?.id).toBe("t1");
     expect(userBTrips).toHaveLength(1);
-    expect(userBTrips[0].id).toBe("t2");
+    expect(userBTrips[0]?.id).toBe("t2");
     // Ensure cross-access fails
     expect(userATrips.find((t) => t.id === "t2")).toBeUndefined();
   });
@@ -33,8 +33,11 @@ describe("authz - own trips only (fallback store)", () => {
     );
     // Simulate delete cascade as trips.ts does
     const idx = store.trips.findIndex((t) => t.id === "t1");
-    store.trips.splice(idx, 1);
-    for (let i = store.items.length - 1; i >= 0; i--) if (store.items[i].trip_id === "t1") store.items.splice(i, 1);
+    if (idx !== -1) store.trips.splice(idx, 1);
+    for (let i = store.items.length - 1; i >= 0; i--) {
+      const item = store.items[i];
+      if (item && item.trip_id === "t1") store.items.splice(i, 1);
+    }
     expect(store.items).toHaveLength(0);
   });
 });

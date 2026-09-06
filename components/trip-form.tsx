@@ -2,7 +2,7 @@
 import { useActionState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
 type Props = {
@@ -38,13 +38,13 @@ export function TripForm({ action, defaultValues, submitLabel }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="trip_type">Type</Label>
-          <Select id="trip_type" name="trip_type" defaultValue={String(defaultValues?.trip_type ?? "leisure")}>
+          <NativeSelect id="trip_type" name="trip_type" defaultValue={String(defaultValues?.trip_type ?? "leisure")}>
             <option value="leisure">Leisure</option>
             <option value="business">Business</option>
             <option value="adventure">Adventure</option>
             <option value="family">Family</option>
             <option value="other">Other</option>
-          </Select>
+          </NativeSelect>
         </div>
         <div className="space-y-2">
           <Label htmlFor="traveler_count">Travelers</Label>
@@ -52,13 +52,13 @@ export function TripForm({ action, defaultValues, submitLabel }: Props) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
-          <Select id="status" name="status" defaultValue={String(defaultValues?.status ?? "planning")}>
+          <NativeSelect id="status" name="status" defaultValue={String(defaultValues?.status ?? "planning")}>
             <option value="planning">Planning</option>
             <option value="upcoming">Upcoming</option>
             <option value="ongoing">Ongoing</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
-          </Select>
+          </NativeSelect>
         </div>
       </div>
       <Button type="submit" disabled={pending as boolean} className="w-full sm:w-auto">{pending ? "Saving..." : submitLabel}</Button>

@@ -55,16 +55,20 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
           <div className="rounded-lg border border-dashed p-6 text-center text-sm text-zinc-500">No itinerary items yet. Add your first activity above.</div>
         ) : (
           <div className="space-y-6">
-            {dates.map((date) => (
-              <div key={date} className="space-y-2">
-                <h3 className="text-sm font-semibold bg-zinc-100 px-3 py-1 rounded-md">{date}</h3>
-                <ul className="space-y-2">
-                  {grouped[date].map((it) => (
-                    <ItineraryItemRow key={it.id} item={it} tripId={trip.id} />
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {dates.map((date) => {
+              const dayItems = grouped[date];
+              if (!dayItems) return null;
+              return (
+                <div key={date} className="space-y-2">
+                  <h3 className="text-sm font-semibold bg-zinc-100 px-3 py-1 rounded-md">{date}</h3>
+                  <ul className="space-y-2">
+                    {dayItems.map((it) => (
+                      <ItineraryItemRow key={it.id} item={it} tripId={trip.id} />
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

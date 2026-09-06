@@ -1,4 +1,4 @@
--- 001-v1-trips-itinerary.sql — Travel App v1
+-- 20250101000000_v1_trips_itinerary.sql — Travel App v1
 -- Source of truth for Supabase. Run via `supabase db push` or psql.
 
 -- Enable pgcrypto for gen_random_uuid if not exists

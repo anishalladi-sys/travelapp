@@ -4,7 +4,7 @@ Status: Implemented (2026-09-02)
 Spec: `docs/reasonix/specs/travelapp-v1-spec.md`
 Plan: `docs/reasonix/plans/travelapp-v1-plan.md`
 ADR: `docs/decisions/0001-use-nextjs-supabase-for-v1.md`
-Migration: `docs/migrations/001-v1-trips-itinerary.sql`
+Migration: `supabase/migrations/20250101000000_v1_trips_itinerary.sql`
 
 ## What shipped
 - Create/view/edit/delete trips (title, destination, dates, type, traveler count, status)

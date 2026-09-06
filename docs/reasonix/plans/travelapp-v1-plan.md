@@ -7,7 +7,7 @@ Next.js 15 App Router + TS strict + Tailwind + shadcn/ui + Supabase (Postgres/Au
 
 ### Slice 0 — Scaffolding & Infra (no user value alone, but unblocks all)
 - Objective: Init Next.js app, Tailwind, shadcn, Supabase helpers, Zod schemas, DB migration, env.
-- Files: `package.json`, `app/layout.tsx`, `app/globals.css`, `lib/supabase/*`, `lib/validations/*`, `docs/migrations/001-v1-trips-itinerary.sql`, `.env.example`
+- Files: `package.json`, `app/layout.tsx`, `app/globals.css`, `lib/supabase/*`, `lib/validations/*`, `supabase/migrations/20250101000000_v1_trips_itinerary.sql`, `.env.example`
 - Deps: none
 - Acceptance: `npm run dev` boots, `npm run build` passes, migration file exists, supabase helpers compile, `npx tsc --noEmit` passes.
 - Verify: `npm run build && npx tsc --noEmit && npm run lint`
