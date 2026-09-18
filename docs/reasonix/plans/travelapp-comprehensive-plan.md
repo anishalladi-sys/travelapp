@@ -16,7 +16,7 @@ Build a production-ready travel planning web app (responsive PWA) with all 10 fe
 |-----|----------|-----------|
 | 0001 | Next.js + Supabase for v1 | Already decided |
 | 0002 | Cloudflare R2 for file storage | Free tier, S3-compatible, global CDN |
-| 0003 | Design system: Tailwind + custom tokens | Consistency, theming, dark mode |
+| 0003 | Design system: Tailwind + claymorphism tokens | Consistency, theming, adaptive dark mode |
 | 0004 | Server Actions + Zod for mutations | Type-safe, no separate API layer needed |
 | 0005 | Vitest + Playwright for testing | Unit + E2E coverage |
 | 0006 | GitHub Actions for CI/CD | Free, integrated with Vercel |
@@ -112,16 +112,16 @@ px tsc --noEmit
 - **Scope:** S
 - **Deps:** 0.1
 
-### Task 0.6: Create Design System Foundation
-- **Description:** Define design tokens (colors, spacing, typography, radii), dark mode, component primitives
+### Task 0.6: Create Design System Foundation — Claymorphism
+- **Description:** Define claymorphism design tokens (clay surfaces, shadows, unified radii), adaptive dark mode, component primitives
 - **Acceptance:**
-  - [ ] 	ailwind.config.ts extends with design tokens
-  - [ ] CSS variables for theming in pp/globals.css
-  - [ ] Dark mode works via class strategy
-  - [ ] shadcn/ui components use design tokens
+  - [ ] `tailwind.config.ts` extends with claymorphism theme (clay colors, shadows, radii)
+  - [ ] CSS variables for clay theming in `app/globals.css` (clay-surface, clay-raised, clay-pressed, clay-border, clay-highlight, clay-shadow, clay-ring)
+  - [ ] Adaptive dark mode works via class strategy (clay depth in both light/dark)
+  - [ ] shadcn/ui components use claymorphism tokens (shadows, radii, colors)
   - [ ] Storybook configured (optional but recommended)
-- **Verify:** Visual check in Storybook or component gallery page
-- **Files:** 	ailwind.config.ts, pp/globals.css, components/ui/*, .storybook/*
+- **Verify:** Visual check in Storybook or component gallery page; clay shadows visible in both themes
+- **Files:** `tailwind.config.ts`, `app/globals.css`, `components/ui/*`, `.storybook/*`
 - **Scope:** M
 - **Deps:** 0.1
 
@@ -314,7 +314,7 @@ pm test -- authz
 ---
 
 
-## Phase 4: Polish v1 + Design System (Weeks 8-9)
+## Phase 4: Polish v1 + Claymorphism Design System (Weeks 8-9)
 
 ### Task 4.1: Loading, Error, Empty States Audit
 - **Description:** Ensure every async boundary has proper states
@@ -348,17 +348,18 @@ pm test -- a11y + manual screen reader test
 - **Scope:** L
 - **Deps:** 0.6, 4.1
 
-### Task 4.3: Dark Mode & Theming
-- **Description:** Complete dark mode support with persistence
+### Task 4.3: Adaptive Claymorphism Dark Mode & Theming
+- **Description:** Complete adaptive claymorphism dark mode support with persistence
 - **Acceptance:**
   - [ ] Theme provider with localStorage persistence
   - [ ] System preference detection
   - [ ] Toggle in header/navigation
-  - [ ] All components work in dark mode
+  - [ ] All components work in dark mode with clay depth visible
   - [ ] No flash of wrong theme on load
   - [ ] Images/icons adapt (SVG currentColor)
-- **Verify:** Manual toggle test + refresh persistence
-- **Files:** components/theme-provider.tsx, components/theme-toggle.tsx, pp/globals.css, pp/layout.tsx
+  - [ ] Clay shadows visible in both light and dark (adaptive clay)
+- **Verify:** Manual toggle test + refresh persistence; clay depth in both themes
+- **Files:** components/theme-provider.tsx, components/theme-toggle.tsx, `app/globals.css`, `app/layout.tsx`
 - **Scope:** M
 - **Deps:** 0.6
 
