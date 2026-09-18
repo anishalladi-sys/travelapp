@@ -33,17 +33,29 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": [
+"include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "__tests__/**/*.ts",
+    "__tests__/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "*.mts",
+    "vitest.setup.ts"
   ],
-  "exclude": [
-    "node_modules"
+"exclude": [
+    "node_modules",
+    ".config",
+    "C:/Users/Anish/.config"
   ]
 }

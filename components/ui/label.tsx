@@ -1,10 +1,12 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
+export type LabelProps = React.LabelHTMLAttributes<HTMLLabelElement>;
 
 export const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
+  // eslint-disable-next-line react/prop-types
   ({ className, ...props }, ref) => (
+    // eslint-disable-next-line jsx-a11y/label-has-associated-control
     <label
       ref={ref}
       className={cn(

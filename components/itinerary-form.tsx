@@ -1,9 +1,7 @@
 "use client";
 import { useActionState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel, FieldInput, FieldTextarea, FieldDescription, FieldError } from "@/components/ui/field";
 
 type Props = {
   action: (prev: unknown, fd: FormData) => Promise<{ error?: string; ok?: boolean } | void>;
@@ -20,30 +18,37 @@ export function ItineraryForm({ action, defaultValues, submitLabel, onSuccess }:
   }, null as never);
   const err = (state as { error?: string } | null)?.error;
   return (
-    <form action={formAction} className="space-y-3 rounded-lg border p-4 bg-zinc-50">
-      {err ? <div role="alert" className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{err}</div> : null}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label htmlFor="date">Date *</Label>
-          <Input id="date" name="date" type="date" required defaultValue={defaultValues?.date ?? ""} />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="time">Time</Label>
-          <Input id="time" name="time" type="time" defaultValue={defaultValues?.time ?? ""} />
-        </div>
+    <form action={formAction} className="space-y-4 rounded-clay-lg border border-clay-border p-4 bg-clay-surface">
+      {err ? (
+        <FieldError role="alert" className="rounded-clay border border-destructive/30 bg-destructive/10 p-2 text-sm text-destructive">{err}</FieldError>
+      ) : null}
+      <div className="grid grid-cols-2 gap-4">
+        <Field>
+          <FieldLabel htmlFor="date" required>Date *</FieldLabel>
+          <FieldDescription>When is this activity?</FieldDescription>
+          <FieldInput id="date" name="date" type="date" required defaultValue={defaultValues?.date ?? ""} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="time">Time</FieldLabel>
+          <FieldDescription>What time? (optional)</FieldDescription>
+          <FieldInput id="time" name="time" type="time" defaultValue={defaultValues?.time ?? ""} />
+        </Field>
       </div>
-      <div className="space-y-1">
-        <Label htmlFor="activity">Activity *</Label>
-        <Input id="activity" name="activity" required defaultValue={defaultValues?.activity ?? ""} placeholder="Visit Senso-ji" maxLength={200} />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="location">Location</Label>
-        <Input id="location" name="location" defaultValue={defaultValues?.location ?? ""} placeholder="Asakusa, Tokyo" maxLength={200} />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" defaultValue={defaultValues?.notes ?? ""} placeholder="Notes, duration, etc." maxLength={1000} />
-      </div>
+      <Field>
+        <FieldLabel htmlFor="activity" required>Activity *</FieldLabel>
+        <FieldDescription>What will you be doing?</FieldDescription>
+        <FieldInput id="activity" name="activity" required defaultValue={defaultValues?.activity ?? ""} placeholder="Visit Senso-ji" maxLength={200} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="location">Location</FieldLabel>
+        <FieldDescription>Where is it? (optional)</FieldDescription>
+        <FieldInput id="location" name="location" defaultValue={defaultValues?.location ?? ""} placeholder="Asakusa, Tokyo" maxLength={200} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="notes">Notes</FieldLabel>
+        <FieldDescription>Additional details (optional)</FieldDescription>
+        <FieldTextarea id="notes" name="notes" defaultValue={defaultValues?.notes ?? ""} placeholder="Notes, duration, etc." maxLength={1000} />
+      </Field>
       <Button type="submit" disabled={pending as boolean} size="sm">{pending ? "Saving..." : submitLabel}</Button>
     </form>
   );
