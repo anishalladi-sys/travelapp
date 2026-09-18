@@ -65,6 +65,15 @@ npm run dev
 
 Visit http://localhost:3000/trips/new to test trip creation.
 
+## 9. Demo Auth Mode (Development Only)
+
+For development without Supabase, set in `.env.local`:
+```bash
+NEXT_PUBLIC_AUTH_MODE=demo
+```
+
+This enables an in-memory demo user (`demo-user-0001`). **Never use in production** — production must reject demo mode even if the flag is set.
+
 ---
 
 ## Troubleshooting
