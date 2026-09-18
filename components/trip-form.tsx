@@ -1,9 +1,8 @@
 "use client";
 import { useActionState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel, FieldInput, FieldDescription, FieldError } from "@/components/ui/field";
 
 type Props = {
   action: (prev: unknown, fd: FormData) => Promise<{ error?: string } | void>;
@@ -15,51 +14,60 @@ export function TripForm({ action, defaultValues, submitLabel }: Props) {
   const [state, formAction, pending] = useActionState(action as never, null as never);
   const err = (state as { error?: string } | null)?.error;
   return (
-    <form action={formAction} className="space-y-4">
-      {err ? <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div> : null}
-      <div className="space-y-2">
-        <Label htmlFor="title">Title *</Label>
-        <Input id="title" name="title" required defaultValue={defaultValues?.title ?? ""} placeholder="Japan 2026" maxLength={100} />
+    <form action={formAction} className="space-y-6">
+      {err ? (
+        <FieldError role="alert" className="rounded-clay border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{err}</FieldError>
+      ) : null}
+      <Field>
+        <FieldLabel htmlFor="title" required>Title *</FieldLabel>
+        <FieldDescription>Give your trip a memorable name</FieldDescription>
+        <FieldInput id="title" name="title" required defaultValue={defaultValues?.title ?? ""} placeholder="Japan 2026" maxLength={100} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="destination" required>Destination *</FieldLabel>
+        <FieldDescription>Where are you headed?</FieldDescription>
+        <FieldInput id="destination" name="destination" required defaultValue={defaultValues?.destination ?? ""} placeholder="Tokyo, Kyoto" maxLength={100} />
+      </Field>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <Field>
+          <FieldLabel htmlFor="start_date" required>Start date *</FieldLabel>
+          <FieldDescription>When does your trip begin?</FieldDescription>
+          <FieldInput id="start_date" name="start_date" type="date" required defaultValue={String(defaultValues?.start_date ?? "")} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="end_date" required>End date *</FieldLabel>
+          <FieldDescription>When does your trip end?</FieldDescription>
+          <FieldInput id="end_date" name="end_date" type="date" required defaultValue={String(defaultValues?.end_date ?? "")} />
+        </Field>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="destination">Destination *</Label>
-        <Input id="destination" name="destination" required defaultValue={defaultValues?.destination ?? ""} placeholder="Tokyo, Kyoto" maxLength={100} />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="start_date">Start date *</Label>
-          <Input id="start_date" name="start_date" type="date" required defaultValue={String(defaultValues?.start_date ?? "")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="end_date">End date *</Label>
-          <Input id="end_date" name="end_date" type="date" required defaultValue={String(defaultValues?.end_date ?? "")} />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="trip_type">Type</Label>
-          <NativeSelect id="trip_type" name="trip_type" defaultValue={String(defaultValues?.trip_type ?? "leisure")}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <Field>
+          <FieldLabel htmlFor="trip_type">Type</FieldLabel>
+          <FieldDescription>What kind of trip is this?</FieldDescription>
+          <NativeSelect id="trip_type" name="trip_type" defaultValue={String(defaultValues?.trip_type ?? "leisure")} className="rounded-clay border-clay-border bg-clay-surface h-10 px-3 py-2 text-sm focus-clay shadow-clay-inset min-h-[44px]">
             <option value="leisure">Leisure</option>
             <option value="business">Business</option>
             <option value="adventure">Adventure</option>
             <option value="family">Family</option>
             <option value="other">Other</option>
           </NativeSelect>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="traveler_count">Travelers</Label>
-          <Input id="traveler_count" name="traveler_count" type="number" min={1} defaultValue={String(defaultValues?.traveler_count ?? "1")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <NativeSelect id="status" name="status" defaultValue={String(defaultValues?.status ?? "planning")}>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="traveler_count">Travelers</FieldLabel>
+          <FieldDescription>How many people are going?</FieldDescription>
+          <FieldInput id="traveler_count" name="traveler_count" type="number" min={1} defaultValue={String(defaultValues?.traveler_count ?? "1")} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="status">Status</FieldLabel>
+          <FieldDescription>Current trip status</FieldDescription>
+          <NativeSelect id="status" name="status" defaultValue={String(defaultValues?.status ?? "planning")} className="rounded-clay border-clay-border bg-clay-surface h-10 px-3 py-2 text-sm focus-clay shadow-clay-inset min-h-[44px]">
             <option value="planning">Planning</option>
             <option value="upcoming">Upcoming</option>
             <option value="ongoing">Ongoing</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </NativeSelect>
-        </div>
+        </Field>
       </div>
       <Button type="submit" disabled={pending as boolean} className="w-full sm:w-auto">{pending ? "Saving..." : submitLabel}</Button>
     </form>
