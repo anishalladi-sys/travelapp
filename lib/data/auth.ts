@@ -1,13 +1,16 @@
 import { cookies } from "next/headers";
-
-const DEMO_COOKIE = "travelapp_user_id";
-const DEMO_USER = "demo-user-0001";
+import {
+  DEMO_COOKIE,
+  DEMO_USER,
+  assertDemoAuthAllowed,
+  isDemoAuthRequested,
+  signDemoSession,
+  verifyDemoSession,
+} from "./demo-session";
 
 // Returns user_id. Uses Supabase auth; only falls back to demo mode when
-// NEXT_PUBLIC_AUTH_MODE=demo is explicitly set (non-production only).
+// NEXT_PUBLIC_AUTH_MODE=demo is explicitly set, and never in production.
 export async function getUserId(): Promise<string | null> {
-  const isDemoMode = process.env.NEXT_PUBLIC_AUTH_MODE === "demo";
-
   try {
     const { createClient } = await import("@/lib/supabase/server");
     const supabase = await createClient();
@@ -17,20 +20,29 @@ export async function getUserId(): Promise<string | null> {
     // Supabase not configured or error - continue to fallback logic
   }
 
-  // Demo fallback: ONLY allowed when explicitly opted in via env flag
-  if (isDemoMode) {
-    try {
-      const jar = await cookies();
-      const existing = jar.get(DEMO_COOKIE)?.value;
-      if (existing) return existing;
-      jar.set(DEMO_COOKIE, DEMO_USER, { path: "/", maxAge: 60 * 60 * 24 * 30 });
-      return DEMO_USER;
-    } catch {
-      return DEMO_USER;
-    }
-  }
+  if (!isDemoAuthRequested()) return null;
 
-  return null;
+  assertDemoAuthAllowed();
+
+  try {
+    const jar = await cookies();
+    const existing = await verifyDemoSession(jar.get(DEMO_COOKIE)?.value);
+    if (existing) return existing;
+
+    const session = await signDemoSession(DEMO_USER);
+    jar.set(DEMO_COOKIE, session, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    return DEMO_USER;
+  } catch {
+    // No request scope (e.g. a test or a non-request context): there is nowhere
+    // to persist the session, but demo auth is still opted in for this process.
+    return DEMO_USER;
+  }
 }
 
 export async function requireUserId(): Promise<string> {

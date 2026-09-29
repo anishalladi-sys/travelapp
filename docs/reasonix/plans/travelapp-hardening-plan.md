@@ -57,13 +57,29 @@ Consequences:
 
 ## Section 2 — Demo-mode auth bypass _(the real vulnerability)_
 
-**Findings addressed:** C-1.
+**Findings addressed:** C-1. **Branch:** `fix/section-2-demo-auth-bypass`.
 
-`lib/data/auth.ts:9-31`. `NEXT_PUBLIC_AUTH_MODE=demo` is the only gate; there is no `NODE_ENV` check, despite `.env.example:35` asserting _"NEVER use in production - production must reject demo mode even if set."_ The code does not reject it. Worse, `auth.ts:24-25` returns the client-supplied `travelapp_user_id` cookie **verbatim** as the user id — any visitor can set that cookie and become any user.
+### What was wrong
 
-`__tests__/demo-mode.test.ts:42-56` currently **asserts the vulnerable behavior** (`expect(userId).toBe("demo-user-0001")` with `NODE_ENV=production` and the flag set) and documents it in a comment. That test must be inverted when the fix lands, or it will fight the fix.
+`lib/data/auth.ts` gated the demo fallback on `NEXT_PUBLIC_AUTH_MODE=demo` alone, with no `NODE_ENV` check, despite `.env.example:35` asserting production must reject it. Worse, it returned the client-supplied `travelapp_user_id` cookie **verbatim** as the user id, so any visitor could set that cookie and become any user. `demo-mode.test.ts` asserted the vulnerable behaviour as expected.
 
-Also in scope: the cookie is unsigned and unverified. Even in demo mode it should not be attacker-controlled.
+### What changed
+
+- **New `lib/data/demo-session.ts`.** `assertDemoAuthAllowed()` throws when the flag is set and `NODE_ENV=production`, naming the variable and noting that `NEXT_PUBLIC_*` is build-inlined so a rebuild is required. `signDemoSession` / `verifyDemoSession` issue and check an HMAC-SHA256 token via Web Crypto; `verifyDemoSession` returns `null` for anything the process did not sign, so a client cannot choose its own id. The signing secret is a per-process random value cached on `globalThis` — no new env var, because demo auth cannot run in production, so the secret never has to survive a deploy.
+- **`lib/data/auth.ts`.** Cookie renamed to `travelapp_demo_session`; the legacy unsigned `travelapp_user_id` is no longer read. New cookie is `httpOnly`, `sameSite=lax`, and `secure` in production.
+- **Tests.** `__tests__/demo-session.test.ts` (guard + forgery) and `__tests__/auth-production.test.ts` (integration through `getUserId` with a mocked cookie jar). The test in `demo-mode.test.ts` that asserted the bypass is inverted.
+
+### Why the failure is loud enough to notice
+
+`app/error.tsx:17` renders `error.message`, so a misconfigured production deploy shows the actionable message and emits a Sentry event rather than quietly serving the shared identity to every visitor.
+
+### Verified
+
+Each half was proven to have teeth by temporarily neutering it: disabling the production guard fails 3 test files; restoring the old unsigned-cookie read fails 2. Suite green at 20/20 with and without `NEXT_PUBLIC_SUPABASE_*` set; `tsc --noEmit` clean; `next lint` clean; `next build` succeeds.
+
+### Note for later
+
+`NEXT_PUBLIC_AUTH_MODE` is inlined at build time, so it cannot be toggled without a redeploy — arguably it should not be `NEXT_PUBLIC_` at all. Renaming is left out of this section to keep it atomic; flagged for §10.
 
 ---
 

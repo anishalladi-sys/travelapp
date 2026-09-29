@@ -39,19 +39,22 @@ describe("demo mode fallback behavior", () => {
     expect(userId).toBe("demo-user-0001");
   });
 
-  it("production rejects demo mode even when flag is set (simulated)", async () => {
-    // In production (NODE_ENV=production), demo mode should be rejected
-    // We use vi.stubEnv to safely modify env vars
+  it("production rejects demo mode even when the flag is set", async () => {
+    // Demo auth resolves every visitor to one shared identity, so a production
+    // deploy that still has the flag set is a live auth bypass, not a dormant
+    // setting. It must fail loudly rather than degrade quietly.
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("NEXT_PUBLIC_AUTH_MODE", "demo");
 
     const { getUserId } = await import("@/lib/data/auth");
-    const userId = await getUserId();
-    
-    // The current implementation returns the demo user even in production
-    // This is a known behavior - the comment says "production must reject demo mode even if set"
-    // but the actual check is only for NEXT_PUBLIC_AUTH_MODE === "demo"
-    // This test documents the current behavior
-    expect(userId).toBe("demo-user-0001");
+    await expect(getUserId()).rejects.toThrow(/production/i);
+  });
+
+  it("demo mode stays enabled in a non-production runtime", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("NEXT_PUBLIC_AUTH_MODE", "demo");
+
+    const { getUserId } = await import("@/lib/data/auth");
+    await expect(getUserId()).resolves.toBe("demo-user-0001");
   });
 });
