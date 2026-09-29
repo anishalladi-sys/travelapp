@@ -4,12 +4,15 @@ import {
   DEMO_USER,
   assertDemoAuthAllowed,
   isDemoAuthRequested,
-  signDemoSession,
   verifyDemoSession,
 } from "./demo-session";
 
 // Returns user_id. Uses Supabase auth; only falls back to demo mode when
 // NEXT_PUBLIC_AUTH_MODE=demo is explicitly set, and never in production.
+//
+// The demo session cookie is issued by middleware (lib/data/demo-cookie.ts),
+// which is the only place on the read path allowed to write one. This side only
+// ever verifies, so a client-authored cookie can never choose the identity.
 export async function getUserId(): Promise<string | null> {
   try {
     const { createClient } = await import("@/lib/supabase/server");
@@ -26,21 +29,11 @@ export async function getUserId(): Promise<string | null> {
 
   try {
     const jar = await cookies();
-    const existing = await verifyDemoSession(jar.get(DEMO_COOKIE)?.value);
-    if (existing) return existing;
-
-    const session = await signDemoSession(DEMO_USER);
-    jar.set(DEMO_COOKIE, session, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
-    return DEMO_USER;
+    return (await verifyDemoSession(jar.get(DEMO_COOKIE)?.value)) ?? DEMO_USER;
   } catch {
-    // No request scope (e.g. a test or a non-request context): there is nowhere
-    // to persist the session, but demo auth is still opted in for this process.
+    // No request scope (e.g. a test or a non-request context). Demo auth is
+    // still opted in for this process, and with no cookie to check the only
+    // identity available is the shared demo user.
     return DEMO_USER;
   }
 }

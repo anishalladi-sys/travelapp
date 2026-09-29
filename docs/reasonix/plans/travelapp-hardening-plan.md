@@ -8,7 +8,7 @@ Sections are ordered by **risk if unfixed**, then by **whether later sections de
 
 ---
 
-## Section 1 — Deterministic test harness _(IN PROGRESS)_
+## Section 1 — Deterministic test harness _(DONE)_
 
 **Findings addressed:** C-2 (corrected), plus the false-confidence problem in `authz.test.ts`.
 
@@ -55,7 +55,7 @@ Consequences:
 
 ---
 
-## Section 2 — Demo-mode auth bypass _(the real vulnerability)_
+## Section 2 — Demo-mode auth bypass _(DONE — C-1 closed)_
 
 **Findings addressed:** C-1. **Branch:** `fix/section-2-demo-auth-bypass`.
 
@@ -83,21 +83,63 @@ Each half was proven to have teeth by temporarily neutering it: disabling the pr
 
 ---
 
-## Section 3 — Restore the E2E verification gate
+## Section 3 — Middleware and silent production degradation _(DONE — H-1, H-2 closed)_
 
-**Findings addressed:** C-4, H-5.
+**Findings addressed:** H-1, H-2. **Branch:** `fix/section-3-middleware-unconfigured`.
+
+**This section moved ahead of the E2E work.** It was originally §5. While setting up E2E I verified the blocker directly: with no Supabase env, the homepage returns **500** and `@supabase/ssr` throws `"Your project's URL and Key are required"` from inside the middleware on every request. The documented quick start in `README.md:13` does not work at all, so there is no environment in which E2E specs could run. Fixing it first was necessary, not a preference.
+
+### What was wrong
+
+`middleware.ts` non-null-asserted `NEXT_PUBLIC_SUPABASE_URL!` / `ANON_KEY!` and constructed a server client **unconditionally**, under a matcher covering every non-static path. With Supabase unconfigured it threw on every request. Separately, `lib/data/trips.ts` silently falls back to a process-global in-memory store when Supabase is missing, which on Vercel is ephemeral and shared — production would appear to work while losing all data.
+
+### What changed
+
+- **New `lib/supabase/env.ts`.** `readSupabaseEnv()` is the single place that decides whether Supabase is usable, returning a discriminated union. A half-supplied or blank pair counts as absent; values are trimmed.
+- **`middleware.ts`.** Uses it. Unconfigured in development → pass the request through (no session cookie to refresh, and demo mode does not use one). Unconfigured in production → throw naming both variables. The `!` assertions are gone. Matcher extended to also skip `webmanifest`, `xml` and `txt` so the middleware has a reason to run on fewer paths.
+- **Demo cookie issuance moved to middleware.** `lib/data/demo-session.ts` gained `resolveDemoSession` in `lib/data/demo-cookie.ts`, and `lib/data/auth.ts` now only ever _verifies_. See the correction below.
+- **Tests.** `__tests__/supabase-env.test.ts` covers the decision matrix; `__tests__/demo-cookie.test.ts` covers issuance, reuse and replacement of forged cookies.
+
+### Correction: the §2 cookie issuance was wrong and is fixed here
+
+§2 put `jar.set(...)` inside `getUserId()`. A Server Component render **cannot** write cookies — Next throws — and the broad `catch` swallowed it, so the signed session was never actually issued. The §2 test passed only because its `cookies()` double implemented a `set` that does not exist at that layer: the same class of mistake as `authz.test.ts`, which I had flagged specifically.
+
+Issuance now happens in middleware, the one place on the read path permitted to write. The double in `auth-production.test.ts` exposes only `get`, so a future test cannot assert against a capability that is not there. Verified live: first request sets `travelapp_demo_session=<userId>.<sig>; HttpOnly; SameSite=lax`, second request reuses it and reissues nothing.
+
+### Verified
+
+- Live dev server, Supabase unconfigured: `/` and `/trips` went **500 → 200**; `/login` and `/design` 200.
+- Live demo mode: signed cookie issued on first request, not reissued on the second.
+- Live with Supabase configured: behaviour unchanged.
+- 22/22 vitest files, `tsc --noEmit` clean, `next lint` clean.
+
+### One thing found and ruled out
+
+While testing, `/trips` returned **200 with the trips page** for an anonymous request, which looked like the `app/trips/layout.tsx` auth gate failing. It is not. The streamed HTML contains `NEXT_REDIRECT;replace;/login;307;` with `stack: [["TripsLayout","./app/trips/layout.tsx",15,66]]` — the gate fires correctly and the browser follows it client-side; only the HTTP status is 200 because the shell flushes first. Reproduced identically on the **original** middleware, so it is not a regression. No user data is exposed either way, since `listTrips()` returns `[]` for no user.
+
+Worth noting: the page markup is flushed to an unauthenticated client before the redirect resolves. Low severity (empty-state only, no user data), but it does mean the trips shell reaches the client pre-redirect.
+
+---
+
+## Section 4 — Restore the E2E verification gate
+
+**Findings addressed:** C-4, H-5. **Was §3; moved behind the middleware fix.**
 
 `playwright.config.ts:4` sets `testDir: "./e2e"`. **No `e2e/` directory exists.** `npm run test:e2e` runs zero tests and `.github/workflows/e2e.yml` burns ~4 min of CI proving it.
 
 The workflow is also incoherent: it runs `npm run build` then discards it for `npm run dev`, while `playwright.config.ts:30-35` _also_ launches `npm run dev` as `webServer` with `reuseExistingServer: !CI` — two servers racing for :3000. Readiness is `sleep 10`.
 
-Blocked on Section 1 (need a reliable harness to seed auth state for authenticated page specs).
+Now unblocked: §1 gave a reliable harness, and §3 made the "no Supabase configured" path actually boot.
+
+**Auth path for specs.** §2 removed the ability to authenticate E2E by setting a cookie: demo mode now issues HMAC-signed sessions and refuses to run in production, and the signing secret is per-process. So specs cannot pre-seed a cookie and must instead run against a dev server started with `NEXT_PUBLIC_AUTH_MODE=demo` and no Supabase env, which gives a deterministic in-memory backend and a real signed session issued by middleware. This exercises the actual code path rather than a test-only shortcut.
+
+**Also due here:** the workflows trigger only on `main`/`develop`, and neither branch exists, so CI has never gated anything. Fixing the trigger set belongs with this section.
 
 ---
 
-## Section 4 — Dependency vulnerabilities
+## Section 5 — Dependency vulnerabilities
 
-**Findings addressed:** C-3.
+**Findings addressed:** C-3. **Was §4.**
 
 `npm audit`: **2 critical, 10 high, 53 moderate** across 1380 deps.
 
@@ -108,18 +150,9 @@ One package per commit, changelog read before each bump, green suite before and 
 
 ---
 
-## Section 5 — Middleware and silent production degradation
-
-**Findings addressed:** H-1, H-2.
-
-- `middleware.ts:10-11` non-null-asserts `NEXT_PUBLIC_SUPABASE_URL!` / `ANON_KEY!` and constructs a server client **unconditionally**, under a matcher covering every non-static path (`middleware.ts:47`). With Supabase env absent — the documented demo path — this throws on every request and 500s the site. Contradicts `README.md:13`.
-- `lib/data/trips.ts` silently falls back to a process-global in-memory store when Supabase env is missing. On Vercel that is ephemeral and shared. Production should fail loudly, not degrade to fake persistence.
-
----
-
 ## Section 6 — Delete the dead service-role client
 
-**Findings addressed:** H-3.
+**Findings addressed:** H-3. **Was §6.**
 
 `lib/supabase/server.ts:32-56` `createAdminClient` is never called anywhere, yet it reads `SUPABASE_SERVICE_ROLE_KEY` and wires the service-role key into a _cookie-based_ client — meaning an end-user session cookie could silently override service-role auth. `README.md:63` confirms v1 does not need it. One-line delete.
 
@@ -159,6 +192,9 @@ One package per commit, changelog read before each bump, green suite before and 
 - CI: dead `TURBO_TOKEN`/`TURBO_TEAM` env (no Turborepo); no `permissions:` block on either workflow; actions pinned to mutable `@v4` tags; `format:check` never runs; the `check` job only re-asserts `needs.*.result`.
 - `~/` directory in the repo root: 2319 untracked files (a full `gstack` checkout including its own `.git`). Not committed, but it pollutes `git status` and risks a nested-repo accident. Add to `.gitignore`.
 - `hooks/use-toast.ts:16` — lint warning, `actionTypes` assigned but only used as a type.
+- `tailwind.config.ts:128` — `require("tailwindcss-animate")` inside an ESM config. Pre-existing, and previously invisible because the file was outside both `tsconfig.json` and the `next lint` scope. Now lint-visible after §3 widened the tsconfig include; fix by importing at the top level. Deliberately left out of §3 to keep it atomic.
+- `tsconfig.json:exclude` contains `"C:/Users/Anish/.config"`, a machine-specific absolute path outside the repository. Dead config that will never apply on another machine; remove.
+- `__tests__/input-field-clay.test.tsx:45` — a `react/no-unescaped-entities` **error**. Invisible because `next lint` does not cover `__tests__/` by default. Either extend the lint scope or fix the apostrophe.
 - No `LESSONS.md`, though CLAUDE.md §29 expects one.
 
 ---
@@ -166,5 +202,6 @@ One package per commit, changelog read before each bump, green suite before and 
 ## Cross-cutting notes
 
 - `.env.local` holds a real `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and `SENTRY_AUTH_TOKEN`. Verified **not** tracked by git and covered by `.gitignore`. No action; noted so it is not re-litigated.
-- `/trips` is correctly gated by `app/trips/layout.tsx:9-11`. No action.
-- CI triggers only on `main`/`develop`; neither branch exists. This is why none of the above was ever caught by CI. Fixing the trigger set belongs with Section 3.
+- `/trips` is correctly gated by `app/trips/layout.tsx:9-11`. Verified live, not just by reading: the streamed response carries `NEXT_REDIRECT;replace;/login;307;` with `stack: [["TripsLayout","./app/trips/layout.tsx",15,66]]`. The HTTP status is 200 because the shell flushes before the redirect resolves, so the trips markup reaches an unauthenticated client — empty state only, no user data, but worth knowing.
+- Type-aware ESLint (`.eslintrc.js:21`) is configured against `tsconfig.json`, whose `include` had never listed the root-level config files. Any commit touching one of them was blocked by the pre-commit hook, and the files went unlinted. §1 added `vitest.config.ts`/`playwright.config.ts`; §3 widened it to `*.ts` so the whole root-level category is covered.
+- CI triggers only on `main`/`develop`; neither branch exists. This is why none of the above was ever caught by CI. Fixing the trigger set belongs with Section 4.

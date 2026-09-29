@@ -45,9 +45,8 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "*.mts",
-    "vitest.setup.ts",
-    "vitest.config.ts",
-    "playwright.config.ts"
+    "*.ts",
+    "vitest.setup.ts"
   ],
   "exclude": ["node_modules", ".config", "C:/Users/Anish/.config"]
 }
