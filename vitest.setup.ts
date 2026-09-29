@@ -3,6 +3,16 @@ import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 import "@/app/globals.css";
 
+// The data layer selects its backend at call time from ambient env
+// (lib/data/trips.ts `hasSupabase`). Vitest never loads `.env.local`, so a
+// developer shell and CI disagree about which backend is under test: CI injects
+// NEXT_PUBLIC_SUPABASE_* into the test job, which flips unit tests onto the
+// Supabase path, where `cookies()` from next/headers is unavailable outside a
+// request scope. The harness owns that decision so no individual test file has
+// to delete these vars itself. A test may still opt in by setting them locally.
+process.env.NEXT_PUBLIC_SUPABASE_URL = "";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "";
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();

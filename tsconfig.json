@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,9 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "baseUrl": ".",
     "forceConsistentCasingInFileNames": true,
@@ -36,7 +30,7 @@
     "noUnusedParameters": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-"include": [
+  "include": [
     "next-env.d.ts",
     "app/**/*.ts",
     "app/**/*.tsx",
@@ -51,11 +45,9 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "*.mts",
-    "vitest.setup.ts"
+    "vitest.setup.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
   ],
-"exclude": [
-    "node_modules",
-    ".config",
-    "C:/Users/Anish/.config"
-  ]
+  "exclude": ["node_modules", ".config", "C:/Users/Anish/.config"]
 }
