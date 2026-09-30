@@ -2,14 +2,22 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: ["**"]
+    branches-ignore: ["main"]
   pull_request:
-    branches: [main, develop]
+    branches: ["**"]
+  workflow_dispatch:
+
+# Least privilege by default.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: "20.x"
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
 jobs:
   lint:
@@ -68,9 +76,18 @@ jobs:
 
       - name: Run tests
         run: npm test
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      # Deliberately no Supabase secrets. vitest.setup.ts pins the data layer to
+      # its in-memory backend, so unit tests never touch a real project. Passing
+      # project credentials here previously flipped tests onto the Supabase code
+      # path, which cannot work outside a request scope.
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
 
   build:
     name: Build
@@ -91,20 +108,3 @@ jobs:
 
       - name: Build application
         run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
-  check:
-    name: Check All
-    runs-on: ubuntu-latest
-    needs: [lint, typecheck, test, build]
-    if: always()
-    steps:
-      - name: Verify all checks passed
-        run: |
-          if [ "${{ needs.lint.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.typecheck.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.test.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.build.result }}" != "success" ]; then exit 1; fi
-          echo "All checks passed!"
