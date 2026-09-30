@@ -210,7 +210,9 @@ One package per commit, changelog read before each bump, green suite before and 
 
 **Findings addressed:** M-5, M-6, L-1, L-4.
 
-- `app/design/page.tsx` — 865 lines, unauthenticated, publicly routable. Largest file in the repo, past the ~1000-line signal threshold. Gate it out of production builds or split it.
+- `app/design/page.tsx` — was 865 lines, unauthenticated, publicly routable, and the largest file in the repo. Two problems recorded together:
+  1. It is past the ~1000-line signal threshold. Gate it out of production builds or split it.
+  2. **It was never prettier-clean**, so the pre-commit hook's `prettier --write` rewrote the whole file on first contact: 865 → 1462 lines, burying a 2-line fix under ~780 lines of unrelated churn. Formatting is now settled and `prettier --check` passes on it, but the next person to edit it will hit the same trap if the file is reformatted again. **Split it before further edits.**
 - CI: dead `TURBO_TOKEN`/`TURBO_TEAM` env (no Turborepo); no `permissions:` block on either workflow; actions pinned to mutable `@v4` tags; `format:check` never runs; the `check` job only re-asserts `needs.*.result`.
 - `~/` directory in the repo root: 2319 untracked files (a full `gstack` checkout including its own `.git`). Not committed, but it pollutes `git status` and risks a nested-repo accident. Add to `.gitignore`.
 - `hooks/use-toast.ts:16` — lint warning, `actionTypes` assigned but only used as a type.
