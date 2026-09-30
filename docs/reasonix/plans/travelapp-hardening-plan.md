@@ -184,19 +184,35 @@ The variable stays out of `docs/architecture/architecture-overview.md`'s secrets
 
 ---
 
-## Section 7 — Extract the trips repository
+## Section 7 — Extract the trips repository _(DONE — M-1 closed, and H-4 with it)_
 
-**Findings addressed:** M-1.
+**Findings addressed:** M-1, and H-4 as a consequence. **Branch:** `refactor/section-7-trips-repository`.
 
-`hasSupabase()` plus the dynamic-import/construct boilerplate is repeated ~10× in `lib/data/trips.ts` (lines 4-6, 12-13, 25-26, 49-50, 63-64, 79-80, 101-102, 126-127, 140-141, 161-162). Textbook "repeated conditionals on the same shape → missing dispatcher." One repository interface with two adapters (in-memory, Supabase) collapses every branch and makes the Section 1 harness decision structural rather than env-driven.
+`hasSupabase()` plus the dynamic-import/construct boilerplate was repeated **9 times** in `lib/data/trips.ts` (verified by count, not estimate). Textbook "repeated conditionals on the same shape → missing dispatcher": every copy re-derived the same rule, and §1's harness fix worked around all nine rather than removing them.
+
+`lib/data/trips-repository.ts` now owns backend selection once, behind a `TripsRepository` interface with two adapters (Supabase anon client, in-memory). `lib/data/trips.ts` dropped from 178 to 115 lines and now owns only identity and rules. Zero occurrences of `hasSupabase` or `supabase/server` remain in it.
+
+### H-4 closed as part of this, not as a separate change
+
+The old `updateItinerary` / `deleteItinerary` fetched `trip_id`, checked ownership in a second query, then issued the write **by `id` alone** — check and write in separate round-trips, so the mutation was never actually constrained by the check. Shaping the interface made the fix structural rather than a patch: `updateItineraryForTrip(tripId, id, patch)` and `deleteItineraryForTrip(tripId, id)` take the owning trip as part of the write's scope, so both adapters emit `.eq("trip_id", …).eq("id", …)` in the mutating statement itself. A method that only accepts `id` cannot express the unsafe call.
+
+### A coverage hole this exposed
+
+My first attempt at the regression test **passed with the scoping deleted from the Supabase adapter.** Reason: the §1 harness pins `NEXT_PUBLIC_SUPABASE_*` empty, so every test in the repo exercises the _in-memory_ adapter, and my rewrite of that adapter had kept its `trip_id` predicate. The in-memory guard was proving nothing about the query that ships.
+
+So the scoping test now asserts against the generated Supabase query directly (`__tests__/trips-repository.test.ts`), with a flat query-builder double. Verified it has teeth: removing `.eq("trip_id", tripId)` from the adapter makes both scoping tests fail with `expected [ 'id=item-7' ] to deeply equal ArrayContaining{ 'trip_id=trip-owned' }`.
+
+`__tests__/trips-ownership.test.ts` covers the same rules end-to-end through the real data layer, which `__tests__/authz.test.ts` never did — that file re-implemented the filter inline and would still pass if `lib/data/trips.ts` were deleted. It is left in place but is now redundant with a test that actually exercises the code.
+
+### Verified
+
+24/24 vitest files (was 22); `tsc --noEmit` clean; `next lint` clean; **39/39 Playwright tests across 3 projects** (15.3m — the slower figure is a loaded machine, not a regression, the same suite ran 3.4m).
 
 ---
 
-## Section 8 — Itinerary authz check-then-write race
+## Section 8 — Itinerary authz check-then-write race _(DONE in Section 7)_
 
-**Findings addressed:** H-4.
-
-`lib/data/trips.ts:141-145` and `163-167`: fetch `trip_id` by id → verify ownership with a second query → then `.eq("id", id)` **without re-asserting the verified scope**. Check and write are separate round-trips. RLS is the backstop, but the app-level check is racy. Scope the write to the verified `trip_id` in a single statement.
+**Findings addressed:** H-4. Closed as a consequence of §7 rather than separately — see that section for the mechanism and the verification. The repository interface now takes the owning `tripId` as part of the write's scope, so the mutating statement is itself constrained by ownership and the unsafe call cannot be expressed. Kept as its own heading so the original finding stays traceable.
 
 ---
 

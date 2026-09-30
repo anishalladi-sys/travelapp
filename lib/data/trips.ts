@@ -1,41 +1,47 @@
 import { store, type Trip, type ItineraryItem } from "./store";
 import { getUserId } from "./auth";
+import { getTripsRepository } from "./trips-repository";
 
-function hasSupabase() {
-  return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Public data access for trips and itinerary items.
+//
+// This layer owns two concerns and nothing else: who the caller is, and what the
+// rules are. Backend selection lives in trips-repository.ts. Ownership is
+// enforced on every read and write, scoped by user_id or by a verified
+// trip_id, so the in-memory adapter and the RLS-backed one enforce the same
+// rules.
+
+import type { RepositoryResult } from "./trips-repository";
+
+function unwrap<T>(result: RepositoryResult<T>): T {
+  if (result.error) throw result.error;
+  return result.value;
 }
 
 export async function listTrips(): Promise<Trip[]> {
-  const user_id = await getUserId();
-  if (!user_id) return [];
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data, error } = await supabase.from("trips").select("*").eq("user_id", user_id).order("start_date", { ascending: true });
-    if (error) throw error;
-    return (data as Trip[]) ?? [];
-  }
-  return store.trips.filter((t) => t.user_id === user_id).sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const userId = await getUserId();
+  if (!userId) return [];
+
+  const repo = await getTripsRepository();
+  return unwrap(await repo.listTrips(userId)) as Trip[];
 }
 
 export async function getTrip(id: string): Promise<Trip | null> {
-  const user_id = await getUserId();
-  if (!user_id) return null;
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data } = await supabase.from("trips").select("*").eq("id", id).eq("user_id", user_id).single();
-    return (data as Trip) ?? null;
-  }
-  return store.trips.find((t) => t.id === id && t.user_id === user_id) ?? null;
+  const userId = await getUserId();
+  if (!userId) return null;
+
+  const repo = await getTripsRepository();
+  return (unwrap(await repo.getTrip(userId, id)) as Trip | null) ?? null;
 }
 
-export async function createTrip(input: Omit<Trip, "id" | "created_at" | "user_id"> & { user_id?: string }): Promise<Trip> {
-  const user_id = input.user_id ?? (await getUserId());
-  if (!user_id) throw new Error("Unauthorized");
+export async function createTrip(
+  input: Omit<Trip, "id" | "created_at" | "user_id"> & { user_id?: string },
+): Promise<Trip> {
+  const userId = input.user_id ?? (await getUserId());
+  if (!userId) throw new Error("Unauthorized");
+
   const trip: Trip = {
     id: crypto.randomUUID(),
-    user_id,
+    user_id: userId,
     title: input.title,
     destination: input.destination,
     start_date: input.start_date,
@@ -45,72 +51,48 @@ export async function createTrip(input: Omit<Trip, "id" | "created_at" | "user_i
     status: input.status ?? "planning",
     created_at: new Date().toISOString(),
   };
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data, error } = await supabase.from("trips").insert(trip).select().single();
-    if (error) throw error;
-    return data as Trip;
-  }
-  store.trips.push(trip);
-  return trip;
+
+  const repo = await getTripsRepository();
+  return unwrap(await repo.insertTrip(trip)) as Trip;
 }
 
-export async function updateTrip(id: string, patch: Partial<Omit<Trip, "id" | "user_id" | "created_at">>): Promise<Trip | null> {
-  const user_id = await getUserId();
-  if (!user_id) throw new Error("Unauthorized");
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data, error } = await supabase.from("trips").update(patch).eq("id", id).eq("user_id", user_id).select().single();
-    if (error) throw error;
-    return data as Trip;
-  }
-  const idx = store.trips.findIndex((t) => t.id === id && t.user_id === user_id);
-  if (idx === -1) return null;
-  store.trips[idx] = { ...store.trips[idx], ...patch } as Trip;
-  return store.trips[idx];
+export async function updateTrip(
+  id: string,
+  patch: Partial<Omit<Trip, "id" | "user_id" | "created_at">>,
+): Promise<Trip | null> {
+  const userId = await getUserId();
+  if (!userId) throw new Error("Unauthorized");
+
+  const repo = await getTripsRepository();
+  return (
+    (unwrap(await repo.updateTrip(userId, id, patch)) as Trip | null) ?? null
+  );
 }
 
 export async function deleteTrip(id: string): Promise<void> {
-  const user_id = await getUserId();
-  if (!user_id) throw new Error("Unauthorized");
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { error } = await supabase.from("trips").delete().eq("id", id).eq("user_id", user_id);
-    if (error) throw error;
-    return;
-  }
-  const idx = store.trips.findIndex((t) => t.id === id && t.user_id === user_id);
-  if (idx !== -1) store.trips.splice(idx, 1);
-  // cascade items
-  for (let i = store.items.length - 1; i >= 0; i--) {
-    const item = store.items[i];
-    if (item && item.trip_id === id) store.items.splice(i, 1);
-  }
+  const userId = await getUserId();
+  if (!userId) throw new Error("Unauthorized");
+
+  const repo = await getTripsRepository();
+  unwrap(await repo.deleteTrip(userId, id));
 }
 
-// Itinerary
-export async function listItinerary(trip_id: string): Promise<ItineraryItem[]> {
-  // ownership check via getTrip (which checks user_id internally)
-  await getUserId();
-  const trip = await getTrip(trip_id);
+export async function listItinerary(tripId: string): Promise<ItineraryItem[]> {
+  // Ownership gate: getTrip returns null for a trip the caller does not own, so
+  // this also scopes the itinerary read.
+  const trip = await getTrip(tripId);
   if (!trip) return [];
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data } = await supabase.from("itinerary_items").select("*").eq("trip_id", trip_id).order("date").order("time");
-    return (data as ItineraryItem[]) ?? [];
-  }
-  return store.items
-    .filter((it) => it.trip_id === trip_id)
-    .sort((a, b) => a.date.localeCompare(b.date) || (a.time ?? "").localeCompare(b.time ?? ""));
+
+  const repo = await getTripsRepository();
+  return unwrap(await repo.listItinerary(tripId)) as ItineraryItem[];
 }
 
-export async function createItinerary(input: Omit<ItineraryItem, "id" | "created_at">): Promise<ItineraryItem> {
+export async function createItinerary(
+  input: Omit<ItineraryItem, "id" | "created_at">,
+): Promise<ItineraryItem> {
   const trip = await getTrip(input.trip_id);
   if (!trip) throw new Error("Forbidden: trip not owned");
+
   const item: ItineraryItem = {
     id: crypto.randomUUID(),
     trip_id: input.trip_id,
@@ -122,57 +104,44 @@ export async function createItinerary(input: Omit<ItineraryItem, "id" | "created
     sort_order: input.sort_order ?? 0,
     created_at: new Date().toISOString(),
   };
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data, error } = await supabase.from("itinerary_items").insert(item).select().single();
-    if (error) throw error;
-    return data as ItineraryItem;
-  }
-  store.items.push(item);
-  return item;
+
+  const repo = await getTripsRepository();
+  return unwrap(await repo.insertItinerary(item)) as ItineraryItem;
 }
 
-export async function updateItinerary(id: string, patch: Partial<Omit<ItineraryItem, "id" | "trip_id" | "created_at">>): Promise<ItineraryItem | null> {
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    // must verify ownership via trip_id join — fetch first
-    const { data: existing } = await supabase.from("itinerary_items").select("trip_id").eq("id", id).single();
-    if (!existing) return null;
-    const trip = await getTrip((existing as { trip_id: string }).trip_id);
-    if (!trip) throw new Error("Forbidden");
-    const { data, error } = await supabase.from("itinerary_items").update(patch).eq("id", id).select().single();
-    if (error) throw error;
-    return data as ItineraryItem;
-  }
-  const idx = store.items.findIndex((it) => it.id === id);
-  if (idx === -1) return null;
-  const item = store.items[idx];
-  if (!item) return null;
-  const trip = await getTrip(item.trip_id);
-  if (!trip) throw new Error("Forbidden");
-  store.items[idx] = { ...item, ...patch } as ItineraryItem;
-  return store.items[idx];
+// Itinerary writes are scoped to the trip they belong to. The owning trip is
+// resolved first so the caller gets a clear "not yours" error, and the
+// repository method then re-asserts that same scope in the write statement, so
+// the mutation cannot be separated from the check the way it could before.
+async function resolveOwnedItineraryScope(id: string): Promise<{
+  repo: Awaited<ReturnType<typeof getTripsRepository>>;
+  tripId: string;
+}> {
+  const repo = await getTripsRepository();
+  const resolved = unwrap(await repo.findItineraryTripId(id));
+  if (!resolved) throw new Error("Forbidden: item not found or not owned");
+
+  const trip = await getTrip(resolved);
+  if (!trip) throw new Error("Forbidden: trip not owned");
+
+  return { repo, tripId: resolved };
+}
+
+export async function updateItinerary(
+  id: string,
+  patch: Partial<Omit<ItineraryItem, "id" | "trip_id" | "created_at">>,
+): Promise<ItineraryItem | null> {
+  const { repo, tripId } = await resolveOwnedItineraryScope(id);
+  return (
+    (unwrap(
+      await repo.updateItineraryForTrip(tripId, id, patch),
+    ) as ItineraryItem | null) ?? null
+  );
 }
 
 export async function deleteItinerary(id: string): Promise<void> {
-  if (hasSupabase()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { data: existing } = await supabase.from("itinerary_items").select("trip_id").eq("id", id).single();
-    if (!existing) return;
-    const trip = await getTrip((existing as { trip_id: string }).trip_id);
-    if (!trip) throw new Error("Forbidden");
-    const { error } = await supabase.from("itinerary_items").delete().eq("id", id);
-    if (error) throw error;
-    return;
-  }
-  const idx = store.items.findIndex((it) => it.id === id);
-  if (idx === -1) return;
-  const item = store.items[idx];
-  if (!item) return;
-  const trip = await getTrip(item.trip_id);
-  if (!trip) throw new Error("Forbidden");
-  store.items.splice(idx, 1);
+  const { repo, tripId } = await resolveOwnedItineraryScope(id);
+  unwrap(await repo.deleteItineraryForTrip(tripId, id));
 }
+
+export { store };
