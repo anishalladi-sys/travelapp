@@ -172,11 +172,15 @@ One package per commit, changelog read before each bump, green suite before and 
 
 ---
 
-## Section 6 — Delete the dead service-role client
+## Section 6 — Delete the dead service-role client _(DONE — H-3 closed)_
 
-**Findings addressed:** H-3. **Was §6.**
+**Findings addressed:** H-3. **Branch:** `fix/section-6-dead-admin-client`.
 
-`lib/supabase/server.ts:32-56` `createAdminClient` is never called anywhere, yet it reads `SUPABASE_SERVICE_ROLE_KEY` and wires the service-role key into a _cookie-based_ client — meaning an end-user session cookie could silently override service-role auth. `README.md:63` confirms v1 does not need it. One-line delete.
+`lib/supabase/server.ts` exported `createAdminClient`, which had **no callers anywhere** in the application, yet it read `SUPABASE_SERVICE_ROLE_KEY` and wired the service-role key into a _cookie-based_ client. That combination is the footgun: a service-role client is meant to bypass RLS entirely, but handing it the request's cookies means an end-user session can attach itself to the client and quietly acquire elevated privileges. It was a loaded gun with no user, which is the worst kind.
+
+Deleted the function. `SUPABASE_SERVICE_ROLE_KEY` is now read by **no** application code path — verified by search, not by assumption — so the Vercel deploy section in `README.md` no longer asks for it, and `.env.example` documents it as unused rather than implying it is required.
+
+The variable stays out of `docs/architecture/architecture-overview.md`'s secrets list only in the sense that it is no longer needed at runtime; the doc's "never exposed to client" note is still correct as a rule and was left alone. `SUPABASE_SETUP.md` still tells you to copy the service-role key during initial setup, which is harmless but now unnecessary — folded into §9.
 
 ---
 
