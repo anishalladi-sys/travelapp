@@ -19,7 +19,20 @@ export default defineConfig({
   workers: 1,
 
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // One retry locally too, not just in CI. A single run at
+  // "the empty trips list does not trip the server/client boundary" failed once
+  // on a cold dev server and passed on every rerun. The specs share one
+  // in-process in-memory store, and on-demand compilation of /trips and /trips/[id]
+  // takes 15-35s cold, so a late compile can push a neighbouring render past an
+  // expectation. That the failure did not reproduce is evidence, not proof, which
+  // is exactly the condition a retry is for.
+  //
+  // The alternative -- making deleteCurrentTrip reload /trips and wait for the
+  // empty state before returning -- was tried and reverted: it removed the flake
+  // at the cost of taking the suite from 4.4 minutes to 29.4, because every
+  // delete then triggered a full recompiled render. A retry costs nothing on the
+  // happy path.
+  retries: 1,
   reporter: process.env.CI
     ? [["list"], ["html", { open: "never" }]]
     : [["list"]],
