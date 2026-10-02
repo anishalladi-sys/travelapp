@@ -30,8 +30,16 @@ export const metadata: Metadata = {
     default: "Travel App — Plan Your Adventures",
     template: "%s | Travel App",
   },
-  description: "Capture trips, itineraries, budgets, and memories — all in one place per trip.",
-  keywords: ["travel", "trip planning", "itinerary", "budget", "packing", "documents"],
+  description:
+    "Capture trips, itineraries, budgets, and memories — all in one place per trip.",
+  keywords: [
+    "travel",
+    "trip planning",
+    "itinerary",
+    "budget",
+    "packing",
+    "documents",
+  ],
   authors: [{ name: "Travel App" }],
   creator: "Travel App",
   publisher: "Travel App",
@@ -42,7 +50,11 @@ export const metadata: Metadata = {
     url: "https://travelapp.example.com",
     siteName: "Travel App",
     title: "Travel App — Plan Your Adventures",
-    description: "Capture trips, itineraries, budgets, and memories — all in one place per trip.",
+    description:
+      "Capture trips, itineraries, budgets, and memories — all in one place per trip.",
+    // NOTE: /og-image.png does not exist in public/. Social platforms fall back
+    // to a blank card rather than failing, but this metadata is a placeholder.
+    // Add the asset before launch; do not leave it referenced indefinitely.
     images: [
       {
         url: "/og-image.png",
@@ -55,21 +67,27 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Travel App — Plan Your Adventures",
-    description: "Capture trips, itineraries, budgets, and memories — all in one place per trip.",
+    description:
+      "Capture trips, itineraries, budgets, and memories — all in one place per trip.",
+    // Same placeholder as openGraph.images above.
     images: ["/og-image.png"],
   },
+  // Every icon path below resolves against app/favicon.ico, which Next.js
+  // serves at /favicon.ico. Do not add entries pointing at files that do not
+  // exist in public/ -- a missing icon is a 404 on every page load and, for
+  // `manifest`, a broken install prompt.
   icons: {
     icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
   },
-  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
+  // Matched to the design system's own surfaces so the browser chrome agrees
+  // with the page: --clay-surface is 35 25% 96% (#f5f0eb) in light and
+  // 25 15% 16% (#2a2724) in dark. See app/globals.css.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f0eb" },
+    { media: "(prefers-color-scheme: dark)", color: "#2a2724" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -82,7 +100,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

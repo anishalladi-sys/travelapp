@@ -43,14 +43,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: "/health",
-        destination: "/api/health",
-      },
-    ];
-  },
+  // No rewrites. There used to be a /health -> /api/health rewrite, but no
+  // app/api/health route exists, so every /health request 404'd. If a health
+  // check is actually needed, add the route first and wire it here -- an
+  // uptime monitor pointed at this rewrite was silently failing.
 };
 
 export default nextConfig;
