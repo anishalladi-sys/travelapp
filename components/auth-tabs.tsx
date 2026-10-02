@@ -1,8 +1,15 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { LoginForm, MagicLinkForm } from "@/components/auth-form";
 import { cn } from "@/lib/utils";
+
+const CALLBACK_ERRORS: Record<string, string> = {
+  missing_code: "That sign-in link was incomplete. Please request a new one.",
+  callback_failed:
+    "That sign-in link has expired or was already used. Please request a new one.",
+};
 
 type TabId = "password" | "magic";
 
@@ -28,6 +35,10 @@ const TABS: ReadonlyArray<{ id: TabId; label: string; panelId: string }> = [
 export function SignInTabs() {
   const [active, setActive] = React.useState<TabId>("password");
   const tabRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
+  // /auth/callback redirects here with ?error=... when a confirmation link is
+  // expired or already used. Without reading it the user lands on a working
+  // sign-in form with no idea why they were sent back.
+  const callbackError = useSearchParams().get("error");
 
   const focusTab = React.useCallback((index: number) => {
     const target = TABS[index];
@@ -64,6 +75,16 @@ export function SignInTabs() {
 
   return (
     <div className="space-y-4" id="auth-tabs">
+      {callbackError ? (
+        <div
+          role="alert"
+          className="rounded-clay border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          {CALLBACK_ERRORS[callbackError] ??
+            "We could not complete that sign-in link. Please try again."}
+        </div>
+      ) : null}
+
       <div
         className="flex space-x-4"
         role="tablist"

@@ -15,6 +15,11 @@ import {
   type MagicLinkInput,
 } from "@/lib/validations/auth";
 import { redirect } from "next/navigation";
+import {
+  enforceRateLimit,
+  HOUR,
+  tooManyAttemptsMessage,
+} from "@/lib/rate-limit";
 
 function getBaseUrl() {
   return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -38,13 +43,31 @@ export async function loginAction(
     };
   }
 
+  const email = parsed.data.email;
+
+  // Two budgets: one per IP so a single host cannot spray many accounts, and one
+  // per IP+email so a distributed attempt against one account is still bounded.
+  // Only failures are charged, so a legitimate user who signs in successfully is
+  // never locked out by earlier traffic -- the Supabase call happens first and
+  // the gate is only consulted on failure.
+  const gate = await enforceRateLimit([
+    { scope: "login", limit: 10, windowMs: 15 * 60_000 },
+    {
+      scope: "login_email",
+      limit: 5,
+      windowMs: 15 * 60_000,
+      identifier: email,
+    },
+  ]);
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
+    email,
     password: parsed.data.password,
   });
 
   if (error) {
+    if (!gate.ok) return { error: tooManyAttemptsMessage() };
     // Deliberately not error.message. Supabase's own text ("Invalid login
     // credentials") is safe, but passing the raw message through means any new
     // upstream wording -- including one that distinguishes "no such user" from
@@ -79,9 +102,19 @@ export async function signupAction(
     };
   }
 
+  const email = parsed.data.email;
+
+  // Signup is unbounded upstream once an IP is trusted, and each attempt can
+  // trigger an outbound email. Both the IP and the target address are limited.
+  const gate = await enforceRateLimit([
+    { scope: "signup", limit: 5, windowMs: HOUR },
+    { scope: "signup_email", limit: 3, windowMs: HOUR, identifier: email },
+  ]);
+  if (!gate.ok) return { error: tooManyAttemptsMessage() };
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
+    email,
     password: parsed.data.password,
     options: {
       emailRedirectTo: `${getBaseUrl()}/auth/callback`,
@@ -93,7 +126,11 @@ export async function signupAction(
   }
 
   if (data.user && !data.session) {
-    return { error: "Please check your email to confirm your account" };
+    // Informational, not a failure: Supabase created the account and is waiting
+    // on the emailed confirmation. This used to travel back through the `error`
+    // channel, so the most common successful sign-up path in the whole product
+    // rendered as a red error next to an error toast.
+    return { success: "Please check your email to confirm your account." };
   }
 
   if (data.user) {
@@ -117,24 +154,32 @@ export async function magicLinkAction(
     };
   }
 
+  const email = parsed.data.email;
+
+  // Each request triggers an outbound email, so both the caller and the target
+  // address are limited.
+  const gate = await enforceRateLimit([
+    { scope: "magic", limit: 5, windowMs: HOUR },
+    { scope: "magic_email", limit: 3, windowMs: HOUR, identifier: email },
+  ]);
+  if (!gate.ok) return { error: tooManyAttemptsMessage() };
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
-    email: parsed.data.email,
+    email,
     options: {
       emailRedirectTo: `${getBaseUrl()}/auth/callback`,
     },
   });
 
   if (error) {
-    // These two flow through the request-validation branch only, so a failure
-    // here is a config or rate-limit problem, not user input. Surfacing
+    // A failure here is a config or rate-limit problem, not user input. Surfacing
     // Supabase's raw message would tell an attacker which of those it is.
-    return { error: "We could not send the link. Please try again shortly." };
+    return {
+      error: "We could not send the link. Please try again shortly.",
+    };
   }
 
-  // Returned on the `success` channel, not `error`: this used to travel through
-  // the error channel and the form rendered a successful send in red beside an
-  // error toast.
   return { success: "Magic link sent! Check your email." };
 }
 
@@ -148,13 +193,22 @@ export async function resetPasswordRequestAction(
     };
   }
 
+  const email = parsed.data.email;
+
+  // The strongest per-target limit in the auth surface. This endpoint is a
+  // password-reset mail dispenser: without a per-address cap it can be used both
+  // to mail-bomb an address and to enumerate which addresses have accounts by
+  // timing the response.
+  const gate = await enforceRateLimit([
+    { scope: "reset", limit: 5, windowMs: HOUR },
+    { scope: "reset_email", limit: 3, windowMs: HOUR, identifier: email },
+  ]);
+  if (!gate.ok) return { error: tooManyAttemptsMessage() };
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    parsed.data.email,
-    {
-      redirectTo: `${getBaseUrl()}/auth/reset-password`,
-    },
-  );
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${getBaseUrl()}/auth/reset-password`,
+  });
 
   if (error) {
     return {
