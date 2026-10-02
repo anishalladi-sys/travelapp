@@ -69,3 +69,10 @@ logs/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Tool scratch directory that is not part of this project. `~/` is a full
+# external checkout (gstack) that landed in the repo root and includes its own
+# .git. It is untracked, but it pollutes `git status` and — because it contains
+# thousands of files — makes `prettier --check .` report syntax errors from
+# unrelated shell scripts. See docs/reasonix/plans/travelapp-hardening-plan.md.
+~/
