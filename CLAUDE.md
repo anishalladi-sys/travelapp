@@ -1660,12 +1660,18 @@ in:
 
 `docs/migrations/`
 
-**This project's rule (2026-08-13):** migration **files** (the actual SQL)
-live under `docs/migrations/` — the agent keeps all durable artifacts,
-including database migrations, inside the docs tree. `agent/src/.../db.py`
-reads its migration directory from `docs/migrations/`. The generic guidance
-below (code migrations staying with tooling) does not apply here; the
-repository convention wins.
+**This project's rule (2026-08-13, corrected 2026-10-02):** migration
+_documentation_ lives under `docs/migrations/`. Migration **files** (the
+executable SQL) live under `supabase/migrations/`, because that is where the
+Supabase CLI reads them — `npm run db:push` runs `supabase db push`, which only
+looks in `supabase/migrations/`. The original version of this rule also claimed
+`agent/src/.../db.py` reads its migration directory from `docs/migrations/`;
+there is no `agent/` directory or `db.py` in this repository, so that
+instruction described tooling that does not exist and was the direct cause of a
+byte-identical copy of the v1 migration living in both trees.
+
+Generic guidance: code migrations stay with the tooling that applies them;
+documentation migrations go in `docs/migrations/`.
 
 ---
 
