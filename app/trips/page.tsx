@@ -7,7 +7,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { Badge } from "@/components/ui/badge";
 import { UserMenu } from "@/components/user-menu";
 import { Reveal, StickyHeader, ScrollProgress } from "@/components/motion";
-import { Plus, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight, Luggage } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +53,11 @@ export default async function TripsPage() {
           <div className="mt-6">
             {trips.length === 0 ? (
               <EmptyState
-                illustration={<div className="text-6xl">🧳</div>}
+                illustration={
+                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-clay-full bg-clay-pressed shadow-clay mx-auto">
+                    <Luggage className="h-8 w-8 text-primary" />
+                  </div>
+                }
                 title="No trips yet"
                 description="Create your first trip to start building your itinerary."
                 action={

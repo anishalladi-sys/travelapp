@@ -93,3 +93,10 @@ This enables an in-memory demo user (`demo-user-0001`). **Never use in productio
 ### Types out of sync
 - Re-run `supabase gen types` after schema changes
 - Restart TypeScript server in VS Code: `Ctrl+Shift+P` → "TypeScript: Restart TS Server"
+
+## Production domain cutover
+
+1. Set Site URL to the production domain.
+2. Add `https://yourdomain.com/auth/callback` to redirect URLs.
+3. Keep localhost entries for local dev.
+4. Full ordered checklist lives in `docs/features/custom-domain-checklist.md`.

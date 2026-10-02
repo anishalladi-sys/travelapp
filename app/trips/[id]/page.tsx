@@ -18,6 +18,7 @@ import {
 import {
   Plus,
   Calendar,
+  CalendarDays,
   MapPin,
   Edit,
   Trash2,
@@ -73,12 +74,12 @@ export default async function TripDetailPage({
       <main className="container py-12 px-4 sm:px-6 lg:px-8">
         <Reveal direction="up" stagger={100}>
           <Parallax speed={0.2} offset={-50}>
-            <div className="absolute inset-0 bg-gradient-to-b from-accent/10 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-clay-pressed/50" />
           </Parallax>
           <div className="relative">
             <CardWithMedia
               media={
-                <div className="aspect-video bg-gradient-to-br from-primary/20 via-clay-surface to-primary/5 flex items-center justify-center relative overflow-hidden">
+                <div className="aspect-video bg-clay-pressed flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20viewBox=%270%200%20256%20256%27%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter%20id=%27noise%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.9%27%20numOctaves=%274%27%20stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url(%23noise)%27/%3E%3C/svg%3E')] opacity-5 pointer-events-none" />
                   <div className="relative z-10 p-8 text-center">
                     <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
@@ -158,7 +159,11 @@ export default async function TripDetailPage({
             {items.length === 0 ? (
               <Reveal direction="up">
                 <EmptyState
-                  illustration={<div className="text-6xl">📅</div>}
+                  illustration={
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-clay-full bg-clay-pressed shadow-clay mx-auto">
+                      <CalendarDays className="h-8 w-8 text-primary" />
+                    </div>
+                  }
                   title="No itinerary items yet"
                   description="Add your first activity above to start building your day-by-day plan."
                   action={

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { MapPin } from "lucide-react";
 
 export interface TimelineItemProps {
   time?: string;
@@ -12,7 +13,16 @@ export interface TimelineItemProps {
   className?: string;
 }
 
-export function TimelineItem({ time, title, description, location, children, marker, variant = "default", className }: TimelineItemProps) {
+export function TimelineItem({
+  time,
+  title,
+  description,
+  location,
+  children,
+  marker,
+  variant = "default",
+  className,
+}: TimelineItemProps) {
   const connectors = {
     default: "border-l-2 border-clay-border",
     dashed: "border-l-2 border-dashed border-clay-border",
@@ -22,20 +32,39 @@ export function TimelineItem({ time, title, description, location, children, mar
   return (
     <div className={cn("relative pl-6 pb-8 last:pb-0", className)}>
       <div className="absolute left-0 top-1 flex h-6 w-6 items-center justify-center">
-        <div className={cn(
-          "h-3 w-3 rounded-full border-2 border-clay-raised bg-clay-raised transition-colors shadow-clay",
-          "bg-primary border-primary",
-          marker && "bg-transparent border-none"
-        )}>
+        <div
+          className={cn(
+            "h-3 w-3 rounded-full border-2 border-clay-raised bg-clay-raised transition-colors shadow-clay",
+            "bg-primary border-primary",
+            marker && "bg-transparent border-none",
+          )}
+        >
           {marker}
         </div>
       </div>
-      <div className={cn("absolute left-1 top-7 bottom-0", connectors[variant])} aria-hidden="true" data-testid="timeline-connector" />
+      <div
+        className={cn("absolute left-1 top-7 bottom-0", connectors[variant])}
+        aria-hidden="true"
+        data-testid="timeline-connector"
+      />
       <div className="relative">
-        {time && <time className="text-caption text-primary font-medium">{time}</time>}
-        <h4 className="text-body-md font-medium text-foreground mt-0.5">{title}</h4>
-        {location && <p className="text-body-sm text-muted-foreground flex items-center gap-1 mt-0.5"><span aria-hidden="true">📍</span>{location}</p>}
-        {description && <p className="text-body-sm text-muted-foreground mt-1">{description}</p>}
+        {time && (
+          <time className="text-caption text-primary font-medium">{time}</time>
+        )}
+        <h4 className="text-body-md font-medium text-foreground mt-0.5">
+          {title}
+        </h4>
+        {location && (
+          <p className="text-body-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+            <MapPin className="h-3 w-3 text-primary" aria-hidden="true" />
+            {location}
+          </p>
+        )}
+        {description && (
+          <p className="text-body-sm text-muted-foreground mt-1">
+            {description}
+          </p>
+        )}
         {children && <div className="mt-2">{children}</div>}
       </div>
     </div>
@@ -56,7 +85,11 @@ export interface TimelineProps {
 
 export function Timeline({ items, className }: TimelineProps) {
   return (
-    <div className={cn("space-y-0", className)} role="list" aria-label="Timeline">
+    <div
+      className={cn("space-y-0", className)}
+      role="list"
+      aria-label="Timeline"
+    >
       {items.map((item, index) => (
         <TimelineItem
           key={`${item.title}-${index}`}

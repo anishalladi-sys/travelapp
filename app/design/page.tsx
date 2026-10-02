@@ -171,7 +171,7 @@ const spacingScale = [
 
 const radii = [
   { name: "radius-sm", value: "0.25rem (4px)" },
-  { name: "radius", value: "0.5rem (8px) — default" },
+  { name: "radius", value: "0.5rem (8px), default" },
   { name: "radius-md", value: "0.75rem (12px)" },
   { name: "radius-lg", value: "1rem (16px)" },
   { name: "radius-full", value: "9999px" },
@@ -399,7 +399,7 @@ function CardDemo() {
         </Card>
         <CardWithMedia
           media={
-            <div className="aspect-video bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
+            <div className="aspect-video bg-clay-pressed flex items-center justify-center">
               <Zap className="h-12 w-12 text-accent" />
             </div>
           }
@@ -864,7 +864,7 @@ function MotionDemo() {
         >
           <div className="mt-6 relative h-64 overflow-hidden rounded-lg">
             <Parallax speed={0.4} offset={-100}>
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-background to-accent/30 flex items-center justify-center">
+              <div className="absolute inset-0 bg-clay-pressed flex items-center justify-center">
                 <div className="text-center p-8">
                   <Zap className="h-16 w-16 text-accent mx-auto mb-4" />
                   <h3 className="font-display text-2xl font-bold text-foreground">
@@ -1047,7 +1047,7 @@ function StickyHeaderDemo() {
         {Array.from({ length: 10 }).map((_, i) => (
           <Card key={i} className="p-4">
             <p className="text-muted-foreground">
-              Content block {i + 1} — scroll to trigger sticky header
+              Content block {i + 1}: scroll to trigger sticky header
             </p>
           </Card>
         ))}
@@ -1154,7 +1154,7 @@ export default function DesignSystemPage() {
                 Editorial Travel Design System
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                A cohesive design system for travel applications — warm paper
+                A cohesive design system for travel applications, warm paper
                 tones, serif display headlines, soft cards, grainy textures, and
                 performant scroll animations.
               </p>
@@ -1286,8 +1286,8 @@ export default function DesignSystemPage() {
                         before:grain
                       </code>
                     </p>
-                    <div className="text-4xl font-display font-bold text-foreground">
-                      ✨
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-clay-full bg-clay-pressed shadow-clay mx-auto">
+                      <Sparkles className="h-8 w-8 text-primary" />
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">
                       Subtle paper-like texture for editorial feel
@@ -1487,7 +1487,7 @@ import { useReducedMotion, useScrollPosition, useInViewport } from '@/hooks/use-
         <div className="container px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Travel App Design System — Built with Next.js 15, Tailwind,
+              Travel App Design System: Built with Next.js 15, Tailwind,
               shadcn/ui
             </p>
             <div className="flex items-center gap-4">
