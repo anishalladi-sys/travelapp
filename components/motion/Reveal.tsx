@@ -56,7 +56,7 @@ export function Reveal({
   // IntersectionObserver effect - always runs, but does nothing when reduced motion
   useEffect(() => {
     if (prefersReducedMotion) return;
-    
+
     const element = elementRef.current;
     if (!element) return;
 
@@ -73,7 +73,7 @@ export function Reveal({
           setIsVisible(false);
         }
       },
-      { threshold, rootMargin }
+      { threshold, rootMargin },
     );
 
     observer.observe(element);
@@ -96,35 +96,36 @@ export function Reveal({
   const effectiveStyle = prefersReducedMotion
     ? { ...style, opacity: 1, transform: "none", transition: "none" }
     : isVisible
-    ? visibleStyle
-    : baseStyle;
+      ? visibleStyle
+      : baseStyle;
 
   // Handle stagger for children
   const childrenWithStagger = React.Children.map(children, (child, index) => {
     if (!React.isValidElement(child)) return child;
-    
+
     const childDelay = delay + index * stagger;
     const childStyle = prefersReducedMotion
       ? { opacity: 1, transform: "none", transition: "none" }
       : isVisible
-      ? { ...revealedStyle, transitionDelay: `${childDelay}ms` }
-      : directionStyles[direction];
-    
+        ? { ...revealedStyle, transitionDelay: `${childDelay}ms` }
+        : directionStyles[direction];
+
     return React.cloneElement(child as React.ReactElement, {
       style: {
+        // The `transition` shorthand resets every transition-* longhand, so it
+        // has to be written *before* transitionDelay. It was previously spread
+        // in after childStyle, which silently discarded each child's stagger
+        // delay and made React warn that a style property was being updated
+        // during rerender against a conflicting shorthand.
+        transition: `opacity 600ms ease-out, transform 600ms ease-out`,
         ...(child as React.ReactElement).props.style,
         ...childStyle,
-        transition: `opacity 600ms ease-out, transform 600ms ease-out`,
       },
     });
   });
 
   return (
-    <div
-      ref={elementRef}
-      className={className}
-      style={effectiveStyle}
-    >
+    <div ref={elementRef} className={className} style={effectiveStyle}>
       {stagger > 0 ? childrenWithStagger : children}
     </div>
   );

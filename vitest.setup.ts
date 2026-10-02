@@ -18,6 +18,56 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// jsdom implements neither ResizeObserver nor IntersectionObserver, and Radix
+// primitives (@radix-ui/react-use-size via Checkbox, Select, Popover) subscribe
+// to ResizeObserver in a layout effect. Without a stub every test that mounts
+// a Radix-based component throws "ResizeObserver is not defined" and fails for
+// a reason that has nothing to do with the code under test.
+class MockObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+}
+
+Object.defineProperty(window, "ResizeObserver", {
+  writable: true,
+  configurable: true,
+  value: MockObserver,
+});
+
+Object.defineProperty(globalThis, "ResizeObserver", {
+  writable: true,
+  configurable: true,
+  value: MockObserver,
+});
+
+if (typeof globalThis.IntersectionObserver === "undefined") {
+  class MockIntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = "";
+    readonly thresholds: readonly number[] = [];
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+  Object.defineProperty(window, "IntersectionObserver", {
+    writable: true,
+    configurable: true,
+    value: MockIntersectionObserver,
+  });
+  Object.defineProperty(globalThis, "IntersectionObserver", {
+    writable: true,
+    configurable: true,
+    value: MockIntersectionObserver,
+  });
+}
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({

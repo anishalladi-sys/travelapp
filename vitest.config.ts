@@ -2,6 +2,16 @@ import { defineConfig } from "vitest/config";
 import path from "path";
 
 export default defineConfig({
+  // tsconfig sets "jsx": "preserve" because that is what Next expects -- the
+  // Next compiler does the transform. Vitest has no Next compiler, so esbuild
+  // inherited "preserve" and emitted JSX that fell back to the classic runtime,
+  // requiring `React` to be in scope in every component. Next does not, so
+  // components that are correct in the app ("ReferenceError: React is not
+  // defined" under test) failed only in tests. Matching Next's automatic
+  // runtime here tests the components the way they actually ship.
+  esbuild: {
+    jsx: "automatic",
+  },
   test: {
     environment: "jsdom",
     globals: true,
