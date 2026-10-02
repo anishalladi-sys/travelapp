@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: "class",
@@ -65,8 +66,14 @@ const config: Config = {
         mono: ["var(--font-mono)", "monospace"],
       },
       fontSize: {
-        "display-xl": ["4.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
-        "display-lg": ["3.75rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
+        "display-xl": [
+          "4.5rem",
+          { lineHeight: "1.1", letterSpacing: "-0.02em" },
+        ],
+        "display-lg": [
+          "3.75rem",
+          { lineHeight: "1.1", letterSpacing: "-0.02em" },
+        ],
         "display-md": ["3rem", { lineHeight: "1.2", letterSpacing: "-0.01em" }],
         "display-sm": ["2.25rem", { lineHeight: "1.3" }],
         "heading-xl": ["1.875rem", { lineHeight: "1.3" }],
@@ -76,7 +83,7 @@ const config: Config = {
         "body-lg": ["1.125rem", { lineHeight: "1.6" }],
         "body-md": ["1rem", { lineHeight: "1.6" }],
         "body-sm": ["0.875rem", { lineHeight: "1.5" }],
-        "caption": ["0.75rem", { lineHeight: "1.5" }],
+        caption: ["0.75rem", { lineHeight: "1.5" }],
       },
       spacing: {
         "18": "4.5rem",
@@ -85,12 +92,17 @@ const config: Config = {
       },
       boxShadow: {
         clay: "4px 4px 8px hsl(var(--clay-shadow) / 0.15), -4px -4px 8px hsl(var(--clay-highlight) / 0.9), 0 0 0 1px hsl(var(--clay-border))",
-        "clay-inset": "inset 2px 2px 4px hsl(var(--clay-shadow) / 0.25), inset -2px -2px 4px hsl(var(--clay-highlight) / 0.7)",
-        "clay-raised": "6px 6px 12px hsl(var(--clay-shadow) / 0.12), -6px -6px 12px hsl(var(--clay-highlight) / 0.8), 0 0 0 1px hsl(var(--clay-border)), inset 1px 1px 2px hsl(var(--clay-shadow) / 0.1), inset -1px -1px 2px hsl(var(--clay-highlight) / 0.5)",
-        "clay-modal": "12px 12px 24px hsl(var(--clay-shadow) / 0.2), -12px -12px 24px hsl(var(--clay-highlight) / 0.6), 0 0 0 1px hsl(var(--clay-border))",
+        "clay-inset":
+          "inset 2px 2px 4px hsl(var(--clay-shadow) / 0.25), inset -2px -2px 4px hsl(var(--clay-highlight) / 0.7)",
+        "clay-raised":
+          "6px 6px 12px hsl(var(--clay-shadow) / 0.12), -6px -6px 12px hsl(var(--clay-highlight) / 0.8), 0 0 0 1px hsl(var(--clay-border)), inset 1px 1px 2px hsl(var(--clay-shadow) / 0.1), inset -1px -1px 2px hsl(var(--clay-highlight) / 0.5)",
+        "clay-modal":
+          "12px 12px 24px hsl(var(--clay-shadow) / 0.2), -12px -12px 24px hsl(var(--clay-highlight) / 0.6), 0 0 0 1px hsl(var(--clay-border))",
         card: "0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08)",
-        "card-hover": "0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08)",
-        elevated: "0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08)",
+        "card-hover":
+          "0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08)",
+        elevated:
+          "0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08)",
         modal: "0 25px 50px -12px rgb(0 0 0 / 0.15)",
       },
       animation: {
@@ -125,7 +137,10 @@ const config: Config = {
     },
   },
   plugins: [
-    require("tailwindcss-animate"),
+    // Imported at the top of this file rather than via `require()`. This config
+    // is ESM, so a bare `require` throws "require is not defined" when Tailwind
+    // loads it -- which took down the dev server mid-E2E-run.
+    animate,
   ],
 };
 

@@ -57,9 +57,9 @@ next-env.d.ts
 playwright-report/
 test-results/
 
-# PWA
-public/sw.js
-public/workbox-*.js
+# PWA: the service worker is hand-written and committed (see public/sw.js).
+# next-pwa and its generated workbox-* output were removed; those lines used to
+# ignore public/sw.js, which would have silently dropped the worker from deploys.
 
 # Logs
 logs/

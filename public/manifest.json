@@ -1,0 +1,46 @@
+{
+  "name": "Travel App — Plan Your Adventures",
+  "short_name": "Travel App",
+  "description": "Capture trips, itineraries, budgets, and memories — all in one place per trip.",
+  "start_url": "/trips",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f0eb",
+  "theme_color": "#f5f0eb",
+  "categories": ["travel", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New trip",
+      "short_name": "New trip",
+      "description": "Start planning a new trip",
+      "url": "/trips/new"
+    },
+    {
+      "name": "My trips",
+      "short_name": "Trips",
+      "description": "See all your trips",
+      "url": "/trips"
+    }
+  ]
+}

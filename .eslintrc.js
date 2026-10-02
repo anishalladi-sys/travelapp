@@ -42,5 +42,10 @@ module.exports = {
     "node_modules/**",
     "playwright-report/**",
     "test-results/**",
+    // A service worker runs in the service-worker global scope and is not part
+    // of the TypeScript program, so type-aware linting cannot parse it.
+    "public/sw.js",
+    // This file. ESLint cannot type-check its own configuration.
+    ".eslintrc.js",
   ],
 };

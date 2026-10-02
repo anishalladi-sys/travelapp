@@ -1,0 +1,79 @@
+# Open Graph image — prompt for AI generation
+#
+# WHAT THIS FILE IS FOR
+# ----------------------
+# The app references /og-image.png in its Open Graph and Twitter metadata so
+# that sharing a link shows a preview card. That file does not exist yet, which
+# is why shared links currently show a blank card.
+#
+# Generate the image below, save it as public/og-image.png, and this file can be
+# deleted. Exact requirements are not optional — platforms reject or mis-crop
+# anything that does not match.
+#
+# ---------------------------------------------------------------------------
+# SPECIFICATIONS (must match exactly)
+# ---------------------------------------------------------------------------
+# File:        PNG
+# Dimensions:  1200 x 630 pixels (must be exactly this, not "about this")
+# Aspect:      1.91:1
+# File size:   under 300 KB (many platforms cap this)
+# Mode:        sRGB colour
+#
+# ---------------------------------------------------------------------------
+# THE PROMPT — paste this into your image generator
+# ---------------------------------------------------------------------------
+Create a wide social media preview image for a travel planning app called
+"Travel App".
+
+Composition: a single centred scene — a stylised travel suitcase lying flat and
+closed, viewed from directly above, next to a folded paper map and a small
+coffee cup. Arranged with generous, calm negative space around them. Nothing
+else in the frame. No people, no hands, no faces.
+
+Style: soft "claymorphism" — the objects look moulded from soft modelling clay
+or unglazed porcelain. Matte surfaces, no gloss, no reflections, no metallic
+finish. Very soft, broad, diffused shadows directly beneath each object, as if
+lit by a large overhead light source. The background and the objects share the
+same clay material, separated only by those soft shadows and a subtle tonal
+shift.
+
+Colour palette — use exactly these and nothing else:
+  - Background:      #f5f0eb  (warm off-white clay)
+  - Secondary shape: #ebe3da  (slightly deeper warm clay, for the map)
+  - Accent detail:   #c4724a  (muted terracotta) — use sparingly, for one or
+                     two small details only, such as the suitcase strap or a
+                     map marker. This is the ONLY saturated colour in the image.
+  - Outlines/text:   #332a20  (very dark warm brown)
+
+Typography: no text anywhere in the image. Do not render the words "Travel
+App", do not render a tagline, do not render any letters or numbers. Social
+platforms place their own caption below the image, and baked-in text gets
+covered or cropped. Leave the composition readable without text.
+
+Mood: calm, tactile, warm, editorial. Premium and considered, not playful or
+cartoonish. Think a design magazine spread.
+
+Quality: crisp, high resolution, suitable for retina. Soft shadows must be
+genuinely soft — no hard-edged shadows.
+
+# ---------------------------------------------------------------------------
+# END OF PROMPT
+# ---------------------------------------------------------------------------
+#
+# ---------------------------------------------------------------------------
+# AFTER YOU GENERATE IT
+# ---------------------------------------------------------------------------
+# 1. Save the file as: public/og-image.png
+# 2. Check it is exactly 1200 x 630:
+#      powershell> Add-Type -AssemblyName System.Drawing
+#      powershell> $i=[System.Drawing.Image]::FromFile("$PWD\public\og-image.png")
+#      powershell> "$($i.Width) x $($i.Height)"
+# 3. Run: npm run build
+# 4. Delete this text file once the image is in place.
+#
+# ALTERNATIVE, IF YOU CANNOT USE AN AI GENERATOR
+# ------------------------------------------------
+# I can generate a plain-text version of this image locally with no external
+# tools, using the same palette. It will be a correct 1200x1200 PNG with the
+# app name and tagline rendered on it — not a picture, but it stops the blank
+# card. Ask me and I will do that instead.
