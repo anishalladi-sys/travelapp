@@ -122,7 +122,15 @@ export async function signupAction(
   });
 
   if (error) {
-    return { error: error.message };
+    // Deliberately not error.message. Supabase distinguishes an already-
+    // registered address from other failures, and forwarding its text verbatim
+    // hands the caller an account-enumeration oracle -- the exact thing the
+    // fixed-message policy in loginAction exists to prevent. This path never
+    // confirms whether an address has an account.
+    if (!gate.ok) return { error: tooManyAttemptsMessage() };
+    return {
+      error: "We could not create the account. Please try again shortly.",
+    };
   }
 
   if (data.user && !data.session) {
@@ -207,7 +215,12 @@ export async function resetPasswordRequestAction(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${getBaseUrl()}/auth/reset-password`,
+    // Must go through the callback, which is the only place the PKCE code is
+    // exchanged for a session. Pointing it straight at the reset page meant the
+    // code was never redeemed, so updateUser ran with no session and every reset
+    // failed. safe-redirect.ts already allows /auth/reset-password as the next
+    // target.
+    redirectTo: `${getBaseUrl()}/auth/callback?next=/auth/reset-password`,
   });
 
   if (error) {
@@ -238,7 +251,13 @@ export async function resetPasswordUpdateAction(
   });
 
   if (error) {
-    return { error: error.message };
+    // Deliberately not error.message. AuthSessionMissingError and similar
+    // internal state leak the backend's view of the session; the user only
+    // needs a stable message.
+    return {
+      error:
+        "We could not update the password. Please sign in again and retry.",
+    };
   }
 
   redirect("/trips");
