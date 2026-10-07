@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { readSupabaseEnv } from "@/lib/supabase/env";
 
 // One seam between the data layer and its two backends.
 //
@@ -289,11 +290,22 @@ let repositoryPromise: Promise<TripsRepository> | null = null;
 
 export function getTripsRepository(): Promise<TripsRepository> {
   if (!repositoryPromise) {
-    const configured =
-      !!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-      !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+    const env = readSupabaseEnv();
 
-    repositoryPromise = configured
+    // The production hard-fail already lives in middleware, but a request path
+    // that does not traverse middleware (a future worker, a webhook, a script, a
+    // page that forgets force-dynamic) would otherwise silently get the per-
+    // process in-memory store and lose every row on each cold start. Fail here
+    // too, so the bug is impossible regardless of the caller.
+    if (!env.configured && env.reason === "missing-env-in-production") {
+      throw new Error(
+        "Supabase is not configured while NODE_ENV=production. Refusing to " +
+          "fall back to the in-memory store, which would lose trip data. Set " +
+          "NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      );
+    }
+
+    repositoryPromise = env.configured
       ? supabaseRepository()
       : Promise.resolve(inMemoryRepository());
   }
