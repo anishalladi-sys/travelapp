@@ -24,15 +24,6 @@ interface RevealProps {
   style?: React.CSSProperties;
 }
 
-const directionStyles: Record<string, React.CSSProperties> = {
-  up: { transform: "translateY(30px)", opacity: 0 },
-  down: { transform: "translateY(-30px)", opacity: 0 },
-  left: { transform: "translateX(30px)", opacity: 0 },
-  right: { transform: "translateX(-30px)", opacity: 0 },
-  scale: { transform: "scale(0.95)", opacity: 0 },
-  none: { opacity: 0 },
-};
-
 const revealedStyle: React.CSSProperties = {
   transform: "translateY(0) translateX(0) scale(1)",
   opacity: 1,
@@ -80,52 +71,83 @@ export function Reveal({
     return () => observer.disconnect();
   }, [threshold, rootMargin, once, prefersReducedMotion]);
 
-  const baseStyle: React.CSSProperties = {
+  // Transition and delay are emitted inline on every render. The hidden start
+  // state (opacity 0, offset transform) is intentionally NOT in the inline
+  // style -- it is applied by the `.reveal-hidden` class, which the stylesheet
+  // gates behind `html.js`. That means the server HTML carries the same style
+  // and the same class on every pass, so there is no hydration mismatch, and a
+  // JS-disabled browser never hides the content at all.
+  const transitionStyle: React.CSSProperties = {
     transition: `opacity 600ms ease-out, transform 600ms ease-out`,
     transitionDelay: `${delay}ms`,
-    ...directionStyles[direction],
+  };
+
+  const baseHidden: React.CSSProperties = {
+    ...transitionStyle,
     ...style,
   };
 
-  const visibleStyle: React.CSSProperties = {
-    ...baseStyle,
+  const revealed: React.CSSProperties = {
+    ...transitionStyle,
     ...revealedStyle,
+    ...style,
   };
 
-  // When reduced motion, show content immediately without animation
+  const hideInitial = !prefersReducedMotion && !isVisible;
+
   const effectiveStyle = prefersReducedMotion
     ? { ...style, opacity: 1, transform: "none", transition: "none" }
     : isVisible
-      ? visibleStyle
-      : baseStyle;
+      ? revealed
+      : baseHidden;
+
+  const wrapperClass = [className, hideInitial && "reveal-hidden"]
+    .filter(Boolean)
+    .join(" ");
 
   // Handle stagger for children
   const childrenWithStagger = React.Children.map(children, (child, index) => {
     if (!React.isValidElement(child)) return child;
 
     const childDelay = delay + index * stagger;
-    const childStyle = prefersReducedMotion
-      ? { opacity: 1, transform: "none", transition: "none" }
-      : isVisible
-        ? { ...revealedStyle, transitionDelay: `${childDelay}ms` }
-        : directionStyles[direction];
+    const childTransition: React.CSSProperties = {
+      transition: `opacity 600ms ease-out, transform 600ms ease-out`,
+      transitionDelay: `${childDelay}ms`,
+    };
 
-    return React.cloneElement(child as React.ReactElement, {
-      style: {
-        // The `transition` shorthand resets every transition-* longhand, so it
-        // has to be written *before* transitionDelay. It was previously spread
-        // in after childStyle, which silently discarded each child's stagger
-        // delay and made React warn that a style property was being updated
-        // during rerender against a conflicting shorthand.
-        transition: `opacity 600ms ease-out, transform 600ms ease-out`,
-        ...(child as React.ReactElement).props.style,
-        ...childStyle,
-      },
-    });
+    const hideChild = !prefersReducedMotion && !isVisible;
+    const childVisible = prefersReducedMotion
+      ? ({
+          opacity: 1,
+          transform: "none",
+          transition: "none",
+        } as React.CSSProperties)
+      : { ...childTransition, ...revealedStyle };
+
+    const existingClass = (child.props as { className?: string }).className;
+    const childClassName = [existingClass, hideChild && "reveal-hidden"]
+      .filter(Boolean)
+      .join(" ");
+
+    return React.cloneElement(
+      child as React.ReactElement,
+      {
+        style: hideChild ? childTransition : childVisible,
+        className: childClassName || undefined,
+        // data-direction drives which offset transform the CSS applies. It is only
+        // meaningful while the child is hidden (before reveal); harmless otherwise.
+        ...(hideChild ? { "data-direction": direction } : {}),
+      } as React.Attributes,
+    );
   });
 
   return (
-    <div ref={elementRef} className={className} style={effectiveStyle}>
+    <div
+      ref={elementRef}
+      className={wrapperClass || undefined}
+      style={effectiveStyle}
+      {...(hideInitial ? { "data-direction": direction } : {})}
+    >
       {stagger > 0 ? childrenWithStagger : children}
     </div>
   );

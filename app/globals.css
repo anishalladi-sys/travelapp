@@ -5,15 +5,15 @@
 @layer base {
   :root {
     /* Clay Surfaces */
-    --clay-surface: 35 25% 96%;           /* #f5f0eb - warm clay base */
-    --clay-raised: 38 33% 98%;            /* #faf6f0 - elevated cards */
-    --clay-pressed: 35 20% 92%;           /* #ebe3da - pressed state */
-    --clay-border: 30 20% 86%;            /* #dccbc0 - subtle edges */
+    --clay-surface: 35 25% 96%; /* #f5f0eb - warm clay base */
+    --clay-raised: 38 33% 98%; /* #faf6f0 - elevated cards */
+    --clay-pressed: 35 20% 92%; /* #ebe3da - pressed state */
+    --clay-border: 30 20% 86%; /* #dccbc0 - subtle edges */
 
     /* Clay Shadows */
-    --clay-highlight: 38 50% 98%;         /* top/inner light */
-    --clay-shadow: 25 25% 35%;            /* bottom/inner dark */
-    --clay-ring: 18 85% 42%;              /* focus ring (terracotta) */
+    --clay-highlight: 38 50% 98%; /* top/inner light */
+    --clay-shadow: 25 25% 35%; /* bottom/inner dark */
+    --clay-ring: 18 85% 42%; /* focus ring (terracotta) */
 
     /* Semantic mappings (consume clay tokens) */
     --background: var(--clay-surface);
@@ -22,7 +22,7 @@
     --card-foreground: 25 25% 12%;
     --popover: var(--clay-raised);
     --popover-foreground: 25 25% 12%;
-    --primary: 18 85% 42%;                /* terracotta accent */
+    --primary: 18 85% 42%; /* terracotta accent */
     --primary-foreground: 38 33% 98%;
     --secondary: var(--clay-pressed);
     --secondary-foreground: 25 25% 18%;
@@ -35,7 +35,7 @@
     --border: var(--clay-border);
     --input: var(--clay-border);
     --ring: var(--clay-ring);
-    --radius: 0.75rem;                    /* 12px unified */
+    --radius: 0.75rem; /* 12px unified */
 
     /* Typography */
     --font-inter: "Inter", system-ui, sans-serif;
@@ -45,14 +45,14 @@
 
   .dark {
     /* Dark Clay Surfaces */
-    --clay-surface: 25 15% 16%;           /* #2a2724 - dark clay base */
-    --clay-raised: 25 15% 20%;            /* #322e2b - elevated */
-    --clay-pressed: 25 10% 13%;           /* #22201e - pressed */
-    --clay-border: 25 10% 23%;            /* #3a3632 - edges */
+    --clay-surface: 25 15% 16%; /* #2a2724 - dark clay base */
+    --clay-raised: 25 15% 20%; /* #322e2b - elevated */
+    --clay-pressed: 25 10% 13%; /* #22201e - pressed */
+    --clay-border: 25 10% 23%; /* #3a3632 - edges */
 
-    --clay-highlight: 25 15% 25%;         /* subtle highlight */
-    --clay-shadow: 0 0% 0%;               /* deep shadow */
-    --clay-ring: 18 85% 50%;              /* brighter terracotta */
+    --clay-highlight: 25 15% 25%; /* subtle highlight */
+    --clay-shadow: 0 0% 0%; /* deep shadow */
+    --clay-ring: 18 85% 50%; /* brighter terracotta */
 
     --background: var(--clay-surface);
     --foreground: 35 20% 95%;
@@ -95,7 +95,9 @@
     text-wrap: balance;
   }
   .animate-in {
-    animation: fadeIn 200ms ease-out, slideUp 200ms ease-out;
+    animation:
+      fadeIn 200ms ease-out,
+      slideUp 200ms ease-out;
   }
   .focus-clay {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
@@ -108,13 +110,27 @@
   }
 
   /* Clay Color Utilities */
-  .bg-clay-surface { background-color: hsl(var(--clay-surface)); }
-  .bg-clay-raised { background-color: hsl(var(--clay-raised)); }
-  .bg-clay-pressed { background-color: hsl(var(--clay-pressed)); }
-  .bg-clay-highlight { background-color: hsl(var(--clay-highlight)); }
-  .text-clay-foreground { color: hsl(var(--foreground)); }
-  .border-clay-border { border-color: hsl(var(--clay-border)); }
-  .ring-clay-ring { --tw-ring-color: hsl(var(--clay-ring)); }
+  .bg-clay-surface {
+    background-color: hsl(var(--clay-surface));
+  }
+  .bg-clay-raised {
+    background-color: hsl(var(--clay-raised));
+  }
+  .bg-clay-pressed {
+    background-color: hsl(var(--clay-pressed));
+  }
+  .bg-clay-highlight {
+    background-color: hsl(var(--clay-highlight));
+  }
+  .text-clay-foreground {
+    color: hsl(var(--foreground));
+  }
+  .border-clay-border {
+    border-color: hsl(var(--clay-border));
+  }
+  .ring-clay-ring {
+    --tw-ring-color: hsl(var(--clay-ring));
+  }
 
   /* Clay Shadow Utilities */
   .shadow-clay {
@@ -233,6 +249,36 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Progressive enhancement for components/motion/Reveal.tsx.
+   The hidden starting state (opacity 0, offset transform) must only apply when
+   JavaScript is active, because the IntersectionObserver that removes it only
+   runs in a browser. Without JS the html.js class is never added, this rule
+   stops matching, and the content renders at full opacity -- it is not hidden.
+   Previously the hidden state was baked into inline style, so a visitor with
+   JS disabled got a blank page. */
+html.js .reveal-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+}
+html.js .reveal-hidden[data-direction="down"] {
+  transform: translateY(-30px);
+}
+html.js .reveal-hidden[data-direction="up"] {
+  transform: translateY(30px);
+}
+html.js .reveal-hidden[data-direction="left"] {
+  transform: translateX(30px);
+}
+html.js .reveal-hidden[data-direction="right"] {
+  transform: translateX(-30px);
+}
+html.js .reveal-hidden[data-direction="scale"] {
+  transform: scale(0.95);
+}
+html.js .reveal-hidden[data-direction="none"] {
+  transform: none;
 }
 
 ::selection {

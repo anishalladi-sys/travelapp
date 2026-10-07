@@ -118,6 +118,12 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
+                  // Reveal.tsx renders its hidden state into the server HTML for
+                  // the no-JS case; this class is what lets its CSS gate the
+                  // hidden style so content is visible when JS is disabled. The
+                  // inline script runs before first paint, so there is no flash
+                  // where hidden content appears and then hides again.
+                  document.documentElement.classList.add('js');
                   var theme = localStorage.getItem('theme');
                   var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                   if (theme === 'dark' || (!theme && systemDark)) {
