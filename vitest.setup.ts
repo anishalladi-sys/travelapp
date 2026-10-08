@@ -103,6 +103,20 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+vi.mock("@clerk/nextjs/server", () => ({
+  auth: vi.fn().mockResolvedValue({ userId: "test-user-id" }),
+}));
+
+vi.mock("next/headers", () => ({
+  cookies: () => ({
+    getAll: vi.fn(() => []),
+    get: vi.fn(),
+    set: vi.fn(),
+    delete: vi.fn(),
+    has: vi.fn(() => false),
+  }),
+}));
+
 vi.mock("@supabase/ssr", () => ({
   createBrowserClient: () => ({
     auth: {

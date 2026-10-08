@@ -1,5 +1,5 @@
 import { store, type Trip, type ItineraryItem } from "./store";
-import { getUserId } from "./auth";
+import { getUserId } from "@/lib/auth";
 import { getTripsRepository } from "./trips-repository";
 
 // Public data access for trips and itinerary items.
@@ -22,7 +22,7 @@ export async function listTrips(): Promise<Trip[]> {
   if (!userId) return [];
 
   const repo = await getTripsRepository();
-  return unwrap(await repo.listTrips(userId)) as Trip[];
+  return unwrap(await repo.listTrips(userId));
 }
 
 export async function getTrip(id: string): Promise<Trip | null> {
@@ -30,7 +30,7 @@ export async function getTrip(id: string): Promise<Trip | null> {
   if (!userId) return null;
 
   const repo = await getTripsRepository();
-  return (unwrap(await repo.getTrip(userId, id)) as Trip | null) ?? null;
+  return unwrap(await repo.getTrip(userId, id));
 }
 
 export async function createTrip(
@@ -53,7 +53,7 @@ export async function createTrip(
   };
 
   const repo = await getTripsRepository();
-  return unwrap(await repo.insertTrip(trip)) as Trip;
+  return unwrap(await repo.insertTrip(trip));
 }
 
 export async function updateTrip(
@@ -64,9 +64,7 @@ export async function updateTrip(
   if (!userId) throw new Error("Unauthorized");
 
   const repo = await getTripsRepository();
-  return (
-    (unwrap(await repo.updateTrip(userId, id, patch)) as Trip | null) ?? null
-  );
+  return unwrap(await repo.updateTrip(userId, id, patch));
 }
 
 export async function deleteTrip(id: string): Promise<void> {
@@ -84,7 +82,7 @@ export async function listItinerary(tripId: string): Promise<ItineraryItem[]> {
   if (!trip) return [];
 
   const repo = await getTripsRepository();
-  return unwrap(await repo.listItinerary(tripId)) as ItineraryItem[];
+  return unwrap(await repo.listItinerary(tripId));
 }
 
 export async function createItinerary(
@@ -106,7 +104,7 @@ export async function createItinerary(
   };
 
   const repo = await getTripsRepository();
-  return unwrap(await repo.insertItinerary(item)) as ItineraryItem;
+  return unwrap(await repo.insertItinerary(item));
 }
 
 // Itinerary writes are scoped to the trip they belong to. The owning trip is
@@ -132,11 +130,7 @@ export async function updateItinerary(
   patch: Partial<Omit<ItineraryItem, "id" | "trip_id" | "created_at">>,
 ): Promise<ItineraryItem | null> {
   const { repo, tripId } = await resolveOwnedItineraryScope(id);
-  return (
-    (unwrap(
-      await repo.updateItineraryForTrip(tripId, id, patch),
-    ) as ItineraryItem | null) ?? null
-  );
+  return unwrap(await repo.updateItineraryForTrip(tripId, id, patch));
 }
 
 export async function deleteItinerary(id: string): Promise<void> {

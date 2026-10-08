@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { ServiceWorker } from "@/components/service-worker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -107,41 +107,44 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  // Reveal.tsx renders its hidden state into the server HTML for
-                  // the no-JS case; this class is what lets its CSS gate the
-                  // hidden style so content is visible when JS is disabled. The
-                  // inline script runs before first paint, so there is no flash
-                  // where hidden content appears and then hides again.
-                  document.documentElement.classList.add('js');
-                  var theme = localStorage.getItem('theme');
-                  var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (theme === 'dark' || (!theme && systemDark)) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-          <Toaster />
-          <ServiceWorker />
-        </ThemeProvider>
-      </body>
-    </html>
+      <html
+        lang="en"
+        suppressHydrationWarning
+        className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}
+      >
+        <head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  try {
+                    // Reveal.tsx renders its hidden state into the server HTML for
+                    // the no-JS case; this class is what lets its CSS gate the
+                    // hidden style so content is visible when JS is disabled. The
+                    // inline script runs before first paint, so there is no flash
+                    // where hidden content appears and then hides again.
+                    document.documentElement.classList.add('js');
+                    var theme = localStorage.getItem('theme');
+                    var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    if (theme === 'dark' || (!theme && systemDark)) {
+                      document.documentElement.classList.add('dark');
+                    }
+                  } catch (e) {}
+                })();
+              `,
+            }}
+          />
+        </head>
+        <body className="min-h-screen bg-background font-sans antialiased">
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

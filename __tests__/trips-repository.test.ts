@@ -20,9 +20,7 @@ const selectQueries: QueryCall[] = [];
 const updateQueries: QueryCall[] = [];
 const deleteQueries: QueryCall[] = [];
 
-vi.mock("@/lib/supabase/server", () => {
-  // A flat query builder: each terminal call records the mode it was in, and
-  // `.eq()` records into that mode's list. No thenables.
+vi.mock("@supabase/ssr", () => {
   const makeQuery = () => {
     const mode = { current: "select" as "select" | "update" | "delete" };
     const query = {
@@ -63,7 +61,13 @@ vi.mock("@/lib/supabase/server", () => {
   };
 
   return {
-    createClient: async () => ({ from: () => makeQuery() }),
+    createServerClient: async () => {
+      const query = makeQuery();
+      return {
+        from: () => query,
+      };
+    },
+    createBrowserClient: vi.fn(),
   };
 });
 

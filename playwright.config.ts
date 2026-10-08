@@ -87,6 +87,10 @@ export default defineConfig({
       // `.env.local` without needing to mutate them.
       NEXT_PUBLIC_SUPABASE_URL: "",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      // Clerk keys for E2E tests - must be real keys for Clerk to work
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+        "pk_test_aGFyZHktbWVlcmthdC05NzA5LmNsZXJrLmFjY291bnRzLmRldiQ",
+      CLERK_SECRET_KEY: "sk_test_fuE6RRx1LLpb1HnTgdqqZ6vcGiccATib9DcIrmMeHW",
     },
   },
 });

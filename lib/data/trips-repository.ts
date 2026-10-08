@@ -1,20 +1,21 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/supabase";
+import { createServerClient } from "@supabase/ssr";
 import { readSupabaseEnv } from "@/lib/supabase/env";
 
-// One seam between the data layer and its two backends.
-//
-// Every query runs as the caller's own user through the anon client, so RLS is
-// always in force and there is no privileged path. The in-memory adapter exists
-// for local development and for the E2E harness, where Supabase is deliberately
-// unconfigured. Which one is used is decided once, here, rather than by a
-// `if (hasSupabase())` in every function -- that check was repeated nine times
-// in lib/data/trips.ts, and each copy re-derived the same rules.
+export type TripRow = Database["public"]["Tables"]["trips"]["Insert"];
+export type TripUpdate = Database["public"]["Tables"]["trips"]["Update"];
+export type TripRowDB = Database["public"]["Tables"]["trips"]["Row"];
 
-// Rows travel as `Record<string, unknown>` rather than `unknown` so the Supabase
-// adapter can pass them to `.insert()` / `.update()` without an `as never`, and
-// callers still get a real check at the boundary where they build the row.
-export type TripRow = Record<string, unknown>;
-export type ItineraryRow = Record<string, unknown>;
+export type ItineraryRow =
+  Database["public"]["Tables"]["itinerary_items"]["Insert"];
+export type ItineraryUpdate =
+  Database["public"]["Tables"]["itinerary_items"]["Update"];
+export type ItineraryRowDB =
+  Database["public"]["Tables"]["itinerary_items"]["Row"];
+
+// Re-export the Row types for external use
+export type Trip = TripRowDB;
+export type ItineraryItem = ItineraryRowDB;
 
 export interface RepositoryResult<T> {
   value: T;
@@ -22,44 +23,62 @@ export interface RepositoryResult<T> {
 }
 
 export interface TripsRepository {
-  listTrips(userId: string): Promise<RepositoryResult<unknown[]>>;
-  getTrip(
-    userId: string,
-    id: string,
-  ): Promise<RepositoryResult<unknown | null>>;
-  insertTrip(row: TripRow): Promise<RepositoryResult<unknown>>;
+  listTrips(userId: string): Promise<RepositoryResult<Trip[]>>;
+  getTrip(userId: string, id: string): Promise<RepositoryResult<Trip | null>>;
+  insertTrip(row: TripRow): Promise<RepositoryResult<Trip>>;
   updateTrip(
     userId: string,
     id: string,
-    patch: TripRow,
-  ): Promise<RepositoryResult<unknown | null>>;
+    patch: TripUpdate,
+  ): Promise<RepositoryResult<Trip | null>>;
   deleteTrip(userId: string, id: string): Promise<RepositoryResult<undefined>>;
-  listItinerary(tripId: string): Promise<RepositoryResult<unknown[]>>;
-  insertItinerary(row: ItineraryRow): Promise<RepositoryResult<unknown>>;
-  // Read-only lookup used to resolve which trip an item belongs to, so the write
-  // below can be scoped to that trip.
+  listItinerary(tripId: string): Promise<RepositoryResult<ItineraryItem[]>>;
+  insertItinerary(row: ItineraryRow): Promise<RepositoryResult<ItineraryItem>>;
   findItineraryTripId(id: string): Promise<RepositoryResult<string | null>>;
-  // The owning trip id is part of the write's scope, not just a precondition.
-  // A method that only took `id` could be called with an id whose ownership was
-  // checked elsewhere, which is a check-then-write race.
   updateItineraryForTrip(
     tripId: string,
     id: string,
-    patch: ItineraryRow,
-  ): Promise<RepositoryResult<unknown | null>>;
+    patch: ItineraryUpdate,
+  ): Promise<RepositoryResult<ItineraryItem | null>>;
   deleteItineraryForTrip(
     tripId: string,
     id: string,
   ): Promise<RepositoryResult<undefined>>;
 }
 
-async function supabaseRepository(): Promise<TripsRepository> {
-  const { createClient } = await import("@/lib/supabase/server");
-  const supabase: SupabaseClient = await createClient();
+async function createSupabaseClient() {
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Ownership is always asserted in the query itself (`user_id` / verified
-  // `trip_id`), so RLS and the application check agree by construction rather
-  // than by convention.
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing Supabase environment variables. Please check .env.local",
+    );
+  }
+
+  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          );
+        } catch {
+          // Ignore cookie setting errors in Server Components
+        }
+      },
+    },
+  });
+}
+
+async function supabaseRepository(): Promise<TripsRepository> {
+  const supabase = await createSupabaseClient();
+
   return {
     async listTrips(userId) {
       const { data, error } = await supabase
@@ -86,7 +105,7 @@ async function supabaseRepository(): Promise<TripsRepository> {
         .insert(row)
         .select()
         .single();
-      return { value: data, error };
+      return { value: data as Trip, error };
     },
 
     async updateTrip(userId, id, patch) {
@@ -125,7 +144,7 @@ async function supabaseRepository(): Promise<TripsRepository> {
         .insert(row)
         .select()
         .single();
-      return { value: data, error };
+      return { value: data as unknown as ItineraryItem, error };
     },
 
     async findItineraryTripId(id) {
@@ -135,14 +154,12 @@ async function supabaseRepository(): Promise<TripsRepository> {
         .eq("id", id)
         .maybeSingle();
       return {
-        value: (data as { trip_id?: string } | null)?.trip_id ?? null,
+        value: data?.trip_id ?? null,
         error,
       };
     },
 
     async updateItineraryForTrip(tripId, id, patch) {
-      // Scoped by both the owning trip and the row id, so ownership is enforced
-      // by the statement that performs the write.
       const { data, error } = await supabase
         .from("itinerary_items")
         .update(patch)
@@ -199,7 +216,18 @@ function inMemoryRepository(): TripsRepository {
 
     async insertTrip(row) {
       const s = await store();
-      const trip = row as import("./store").Trip;
+      const trip: Trip = {
+        id: (row as { id?: string }).id ?? crypto.randomUUID(),
+        user_id: row.user_id,
+        title: row.title,
+        destination: row.destination,
+        start_date: row.start_date,
+        end_date: row.end_date,
+        trip_type: row.trip_type ?? "leisure",
+        traveler_count: row.traveler_count ?? 1,
+        status: row.status ?? "planning",
+        created_at: new Date().toISOString(),
+      };
       s.trips.push(trip);
       return { value: trip, error: null };
     },
@@ -212,7 +240,7 @@ function inMemoryRepository(): TripsRepository {
       if (index === -1) return { value: null, error: null };
       const existing = s.trips[index];
       if (!existing) return { value: null, error: null };
-      const updated = { ...existing, ...patch } as import("./store").Trip;
+      const updated = { ...existing, ...patch };
       s.trips[index] = updated;
       return { value: updated, error: null };
     },
@@ -246,7 +274,20 @@ function inMemoryRepository(): TripsRepository {
 
     async insertItinerary(row) {
       const s = await store();
-      const item = row as import("./store").ItineraryItem;
+      // The row is an Insert type (partial); we need to return the full Row type.
+      // In the in-memory store, we construct the full row by adding the generated
+      // fields that the database would normally provide.
+      const item: ItineraryItem = {
+        id: (row as { id?: string }).id ?? crypto.randomUUID(),
+        trip_id: row.trip_id,
+        date: row.date,
+        time: row.time ?? null,
+        activity: row.activity,
+        location: row.location ?? null,
+        notes: row.notes ?? null,
+        sort_order: row.sort_order ?? 0,
+        created_at: new Date().toISOString(),
+      };
       s.items.push(item);
       return { value: item, error: null };
     },
@@ -267,10 +308,7 @@ function inMemoryRepository(): TripsRepository {
       if (index === -1) return { value: null, error: null };
       const existing = s.items[index];
       if (!existing) return { value: null, error: null };
-      const updated = {
-        ...existing,
-        ...patch,
-      } as import("./store").ItineraryItem;
+      const updated = { ...existing, ...patch };
       s.items[index] = updated;
       return { value: updated, error: null };
     },

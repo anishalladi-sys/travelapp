@@ -2,6 +2,22 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // next lint with no --dir uses ESLINT_DEFAULT_DIRS (app, pages, components,
+  // lib, src). That skips middleware.ts (the auth boundary!), __tests__/,
+  // e2e/, hooks/, scripts/, and all config files. Explicitly list everything
+  // that contains source code so CI actually lints the auth boundary and tests.
+  eslint: {
+    dirs: [
+      "app",
+      "components",
+      "lib",
+      "hooks",
+      "middleware.ts",
+      "e2e",
+      "__tests__",
+      "scripts",
+    ],
+  },
   experimental: {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
   },

@@ -1,5 +1,4 @@
-import { Suspense } from "react";
-import { SignInTabs } from "@/components/auth-tabs";
+import { SignIn } from "@clerk/nextjs";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,17 +14,16 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold tracking-tight">Travel App</h1>
           <p className="text-muted-foreground mt-2">Plan your adventures</p>
         </div>
-        {/* SignInTabs reads ?error= from useSearchParams so an expired or
-            already-used confirmation link explains itself instead of dumping the
-            user on a blank form. useSearchParams opts a subtree out of static
-            rendering, so it needs a boundary to prerender the shell. */}
-        <Suspense
-          fallback={
-            <div className="h-96 w-full max-w-md animate-pulse rounded-clay bg-clay-surface" />
-          }
-        >
-          <SignInTabs />
-        </Suspense>
+        <SignIn
+          routing="path"
+          path="/login"
+          signUpUrl="/signup"
+          appearance={{
+            elements: {
+              formButtonPrimary: "bg-primary hover:bg-primary/90",
+            },
+          }}
+        />
       </div>
     </div>
   );
